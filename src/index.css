@@ -1187,18 +1187,20 @@ html, body {
   padding: 16px;
   max-height: 360px;
   overflow-y: auto;
-  animation: dropdownFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  
+  /* Hidden default state */
+  opacity: 0;
+  transform: translateY(10px) scale(0.98);
+  pointer-events: none;
+  visibility: hidden;
+  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@keyframes dropdownFadeIn {
-  from {
-    transform: translateY(10px) scale(0.98);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0) scale(1);
-    opacity: 1;
-  }
+.notifications-dropdown.show {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+  visibility: visible;
 }
 
 @media (max-width: 480px) {

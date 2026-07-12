@@ -42,6 +42,38 @@ const getShortAddressName = (addressString) => {
   return parts[0].trim();
 };
 
+// Helper to render premium status badges
+const renderStatusPill = (status) => {
+  let badgeClass = 'badge-muted';
+  let dotColor = '#94a3b8';
+  let text = 'PLANNED';
+
+  if (status === 'Completed') {
+    badgeClass = 'badge-success';
+    dotColor = 'var(--success)';
+    text = 'COMPLETED';
+  } else if (status === 'Dispatched') {
+    badgeClass = 'badge-info';
+    dotColor = 'var(--info)';
+    text = 'RUNNING';
+  } else if (status === 'Cancelled') {
+    badgeClass = 'badge-danger';
+    dotColor = 'var(--danger)';
+    text = 'CANCELLED';
+  } else if (status === 'Draft') {
+    badgeClass = 'badge-muted';
+    dotColor = 'var(--warning)';
+    text = 'PLANNED';
+  }
+
+  return (
+    <span className={`badge ${badgeClass}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '9px', padding: '3px 8px', letterSpacing: '0.5px' }}>
+      <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: dotColor, display: 'inline-block' }}></span>
+      {text}
+    </span>
+  );
+};
+
 // Live Logistics Map component using Leaflet dynamically
 function LiveLogisticsMap({ trips, darkMode }) {
   const mapRef = React.useRef(null);
@@ -1433,15 +1465,7 @@ export default function App() {
                                   </div>
                                 </td>
                                 <td style={{ fontSize: '11px' }} title={`${trip.source} → ${trip.destination}`}>{getShortAddressName(trip.source)} → {getShortAddressName(trip.destination)}</td>
-                                <td>
-                                  <span className={`badge ${
-                                    trip.status === 'Completed' ? 'badge-success' :
-                                    trip.status === 'Dispatched' ? 'badge-info' :
-                                    trip.status === 'Cancelled' ? 'badge-danger' : 'badge-muted'
-                                  }`}>
-                                    {trip.status === 'Dispatched' ? 'Active' : trip.status}
-                                  </span>
-                                </td>
+                                <td>{renderStatusPill(trip.status)}</td>
                               </tr>
                             );
                           })
@@ -1546,123 +1570,226 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* 3. Logistics Weather & Stepper Timeline */}
-                <div className="card" style={{ marginBottom: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                  <div className="card-header">
-                    <h3 className="card-title" style={{ display: 'flex', alignItems: 'center' }}>
-                      <Map size={16} style={{ color: 'var(--success)', marginRight: '8px' }} />
-                      <span>Hub Logistics Intel</span>
-                    </h3>
-                  </div>
-                  {/* Weather Widget */}
-                  {(() => {
-                    const latestTrip = trips[trips.length - 1];
-                    let cityName = 'Ahmedabad Hub';
-                    let temp = 34;
-                    let conditions = 'Good Driving Conditions';
-                    
-                    if (latestTrip) {
-                      cityName = getShortAddressName(latestTrip.source);
-                      let hash = 0;
-                      for (let i = 0; i < latestTrip.source.length; i++) {
-                        hash = latestTrip.source.charCodeAt(i) + ((hash << 5) - hash);
+                {/* 3. Right Dashboard Sidebar Column */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: 0 }}>
+                  
+                  {/* Weather & Stepper Timeline */}
+                  <div className="card" style={{ marginBottom: 0, padding: '16px' }}>
+                    <div className="card-header">
+                      <h3 className="card-title" style={{ display: 'flex', alignItems: 'center' }}>
+                        <Map size={16} style={{ color: 'var(--success)', marginRight: '8px' }} />
+                        <span>Hub Logistics Intel</span>
+                      </h3>
+                    </div>
+                    {/* Weather Widget */}
+                    {(() => {
+                      const latestTrip = trips[trips.length - 1];
+                      let cityName = 'Ahmedabad Hub';
+                      let temp = 34;
+                      let conditions = 'Good Driving Conditions';
+                      
+                      if (latestTrip) {
+                        cityName = getShortAddressName(latestTrip.source);
+                        let hash = 0;
+                        for (let i = 0; i < latestTrip.source.length; i++) {
+                          hash = latestTrip.source.charCodeAt(i) + ((hash << 5) - hash);
+                        }
+                        temp = 24 + (Math.abs(hash) % 12);
+                        conditions = (Math.abs(hash) % 3 === 0) ? 'Clear • Perfect Visibility' : (Math.abs(hash) % 3 === 1) ? 'Overcast • Good Conditions' : 'Slight Rain • Reduce Speed';
                       }
-                      temp = 24 + (Math.abs(hash) % 12);
-                      conditions = (Math.abs(hash) % 3 === 0) ? 'Clear • Perfect Visibility' : (Math.abs(hash) % 3 === 1) ? 'Overcast • Good Conditions' : 'Slight Rain • Reduce Speed';
-                    }
 
-                    return (
-                      <div style={{ display: 'flex', gap: '16px', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.02)', padding: '10px 14px', borderRadius: '6px', border: '1px solid var(--border-color)', marginBottom: '10px' }}>
-                        <Sun size={24} style={{ color: 'var(--primary)' }} />
-                        <div>
-                          <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>{cityName}</div>
-                          <div style={{ fontSize: '11px', color: temp > 30 ? 'var(--warning)' : 'var(--success)', fontWeight: '600' }}>{temp}°C • {conditions}</div>
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  {/* Dispatch stepper checklist timeline */}
-                  {(() => {
-                    const latestTrip = trips[trips.length - 1];
-                    if (!latestTrip) {
                       return (
-                        <div style={{ backgroundColor: 'rgba(255,255,255,0.02)', padding: '10px 14px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
-                          <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '8px' }}>Standard Dispatch Sequence</div>
-                          <div style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>No active dispatches logged.</div>
+                        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.02)', padding: '10px 14px', borderRadius: '6px', border: '1px solid var(--border-color)', marginBottom: '10px' }}>
+                          <Sun size={24} style={{ color: 'var(--primary)' }} />
+                          <div>
+                            <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>{cityName}</div>
+                            <div style={{ fontSize: '11px', color: temp > 30 ? 'var(--warning)' : 'var(--success)', fontWeight: '600' }}>{temp}°C • {conditions}</div>
+                          </div>
                         </div>
                       );
-                    }
+                    })()}
 
-                    const formatTime = (isoString, offsetMins = 0) => {
-                      try {
-                        const d = new Date(isoString.replace(' ', 'T'));
-                        if (isNaN(d.getTime())) return '09:00';
-                        d.setMinutes(d.getMinutes() + offsetMins);
-                        return d.toTimeString().split(' ')[0].substring(0, 5);
-                      } catch(e) {
-                        return '09:00';
+                    {/* Dispatch stepper checklist timeline */}
+                    {(() => {
+                      const latestTrip = trips[trips.length - 1];
+                      if (!latestTrip) {
+                        return (
+                          <div style={{ backgroundColor: 'rgba(255,255,255,0.02)', padding: '10px 14px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                            <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '8px' }}>Standard Dispatch Sequence</div>
+                            <div style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>No active dispatches logged.</div>
+                          </div>
+                        );
                       }
-                    };
 
-                    const time1 = formatTime(latestTrip.created_at || '2026-07-12 09:00:00', 0);
-                    const time2 = formatTime(latestTrip.created_at || '2026-07-12 09:00:00', 15);
-                    const time3 = formatTime(latestTrip.created_at || '2026-07-12 09:00:00', 30);
-                    const time4 = formatTime(latestTrip.created_at || '2026-07-12 09:00:00', 45);
+                      const formatTime = (isoString, offsetMins = 0) => {
+                        try {
+                          const d = new Date(isoString.replace(' ', 'T'));
+                          if (isNaN(d.getTime())) return '09:00';
+                          d.setMinutes(d.getMinutes() + offsetMins);
+                          return d.toTimeString().split(' ')[0].substring(0, 5);
+                        } catch(e) {
+                          return '09:00';
+                        }
+                      };
 
-                    const isAssigned = !!latestTrip.driver_id;
-                    const isDispatched = latestTrip.status === 'Dispatched' || latestTrip.status === 'Completed';
-                    const isCompleted = latestTrip.status === 'Completed';
+                      const time1 = formatTime(latestTrip.created_at || '2026-07-12 09:00:00', 0);
+                      const time2 = formatTime(latestTrip.created_at || '2026-07-12 09:00:00', 15);
+                      const time3 = formatTime(latestTrip.created_at || '2026-07-12 09:00:00', 30);
+                      const time4 = formatTime(latestTrip.created_at || '2026-07-12 09:00:00', 45);
 
-                    return (
-                      <div style={{ backgroundColor: 'rgba(255,255,255,0.02)', padding: '10px 14px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                          <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-primary)' }}>Trip TR-{String(latestTrip.id).padStart(4, '0')} Telemetry</span>
-                          <span className={`badge ${latestTrip.status === 'Completed' ? 'badge-success' : latestTrip.status === 'Dispatched' ? 'badge-info' : 'badge-muted'}`} style={{ fontSize: '8px', padding: '1px 4px' }}>
-                            {latestTrip.status}
-                          </span>
+                      const isAssigned = !!latestTrip.driver_id;
+                      const isDispatched = latestTrip.status === 'Dispatched' || latestTrip.status === 'Completed';
+                      const isCompleted = latestTrip.status === 'Completed';
+
+                      return (
+                        <div style={{ backgroundColor: 'rgba(255,255,255,0.02)', padding: '10px 14px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                            <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-primary)' }}>Trip TR-{String(latestTrip.id).padStart(4, '0')} Telemetry</span>
+                            <span className={`badge ${latestTrip.status === 'Completed' ? 'badge-success' : latestTrip.status === 'Dispatched' ? 'badge-info' : 'badge-muted'}`} style={{ fontSize: '8px', padding: '1px 4px' }}>
+                              {latestTrip.status}
+                            </span>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '10px' }}>
+                              <Check size={10} style={{ color: 'var(--success)' }} />
+                              <span>{time1} - Cargo Trip Created</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '10px' }}>
+                              {isAssigned ? (
+                                <Check size={10} style={{ color: 'var(--success)' }} />
+                              ) : (
+                                <Clock size={10} style={{ color: 'var(--text-muted)' }} />
+                              )}
+                              <span style={{ color: isAssigned ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                                {time2} - Driver Assigned ({latestTrip.driver_name || 'Pending'})
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '10px' }}>
+                              {isDispatched ? (
+                                <Check size={10} style={{ color: 'var(--success)' }} />
+                              ) : (
+                                <Clock size={10} style={{ color: 'var(--text-muted)' }} />
+                              )}
+                              <span style={{ color: isDispatched ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                                {time3} - Safety Clearance Checked
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '10px' }}>
+                              {isCompleted ? (
+                                <Check size={10} style={{ color: 'var(--success)' }} />
+                              ) : isDispatched ? (
+                                <div className="pulse-dot" style={{ width: '6px', height: '6px', backgroundColor: 'var(--primary)', borderRadius: '50%', display: 'inline-block' }}></div>
+                              ) : (
+                                <Clock size={10} style={{ color: 'var(--text-muted)' }} />
+                              )}
+                              <span style={{ color: isDispatched ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: isDispatched && !isCompleted ? '600' : 'normal', marginLeft: isDispatched && !isCompleted ? '4px' : '0' }}>
+                                {time4} - {isCompleted ? 'Completed & Handed Over' : isDispatched ? 'Transit Active (GPS Live)' : 'Awaiting Dispatch'}
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '10px' }}>
-                            <Check size={10} style={{ color: 'var(--success)' }} />
-                            <span>{time1} - Cargo Trip Created</span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '10px' }}>
-                            {isAssigned ? (
-                              <Check size={10} style={{ color: 'var(--success)' }} />
-                            ) : (
-                              <Clock size={10} style={{ color: 'var(--text-muted)' }} />
-                            )}
-                            <span style={{ color: isAssigned ? 'var(--text-primary)' : 'var(--text-muted)' }}>
-                              {time2} - Driver Assigned ({latestTrip.driver_name || 'Pending'})
-                            </span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '10px' }}>
-                            {isDispatched ? (
-                              <Check size={10} style={{ color: 'var(--success)' }} />
-                            ) : (
-                              <Clock size={10} style={{ color: 'var(--text-muted)' }} />
-                            )}
-                            <span style={{ color: isDispatched ? 'var(--text-primary)' : 'var(--text-muted)' }}>
-                              {time3} - Safety Clearance Checked
-                            </span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '10px' }}>
-                            {isCompleted ? (
-                              <Check size={10} style={{ color: 'var(--success)' }} />
-                            ) : isDispatched ? (
-                              <div className="pulse-dot" style={{ width: '6px', height: '6px', backgroundColor: 'var(--primary)', borderRadius: '50%', display: 'inline-block' }}></div>
-                            ) : (
-                              <Clock size={10} style={{ color: 'var(--text-muted)' }} />
-                            )}
-                            <span style={{ color: isDispatched ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: isDispatched && !isCompleted ? '600' : 'normal', marginLeft: isDispatched && !isCompleted ? '4px' : '0' }}>
-                              {time4} - {isCompleted ? 'Completed & Handed Over' : isDispatched ? 'Transit Active (GPS Live)' : 'Awaiting Dispatch'}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })()}
+                      );
+                    })()}
+                  </div>
+
+                  {/* Live Operations Feed Card */}
+                  <div className="card" style={{ marginBottom: 0, padding: '16px', display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+                    <div className="card-header" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '8px', marginBottom: '10px' }}>
+                      <h3 className="card-title" style={{ display: 'flex', alignItems: 'center' }}>
+                        <Activity size={16} style={{ color: 'var(--primary)', marginRight: '8px' }} />
+                        <span>Live Operations Feed</span>
+                      </h3>
+                    </div>
+                    <div className="operations-feed-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px', overflowY: 'auto', maxHeight: '160px', paddingRight: '4px' }}>
+                      {(() => {
+                        const feedLogs = [];
+                        
+                        trips.forEach(t => {
+                          const time = t.created_at ? t.created_at.split(' ')[1].substring(0, 5) : '09:00';
+                          if (t.status === 'Completed') {
+                            feedLogs.push({
+                              time,
+                              title: `Trip Completed`,
+                              desc: `TR-${String(t.id).padStart(4, '0')} loaded revenue of ₹${t.revenue.toLocaleString()}`,
+                              type: 'success'
+                            });
+                          } else if (t.status === 'Dispatched') {
+                            feedLogs.push({
+                              time,
+                              title: `Vehicle Dispatched`,
+                              desc: `TR-${String(t.id).padStart(4, '0')} en route to ${getShortAddressName(t.destination)}`,
+                              type: 'info'
+                            });
+                          } else {
+                            feedLogs.push({
+                              time,
+                              title: `Cargo Route Planned`,
+                              desc: `TR-${String(t.id).padStart(4, '0')} created for ${t.vehicle_reg_no}`,
+                              type: 'warning'
+                            });
+                          }
+                        });
+
+                        maintenanceLogs.forEach(m => {
+                          feedLogs.push({
+                            time: '08:30',
+                            title: `Maintenance Logged`,
+                            desc: `Vehicle ${m.vehicle_reg_no}: ${m.service_type} (${m.status})`,
+                            type: 'danger'
+                          });
+                        });
+
+                        expenses.slice(0, 3).forEach(e => {
+                          feedLogs.push({
+                            time: '10:12',
+                            title: `Expense Logged`,
+                            desc: `₹${e.cost.toLocaleString()} logged under ${e.type} for ${e.vehicle_reg_no}`,
+                            type: 'warning'
+                          });
+                        });
+
+                        if (feedLogs.length === 0) {
+                          feedLogs.push({
+                            time: '09:00',
+                            title: 'Operations Online',
+                            desc: 'TransitOps live logging systems online',
+                            type: 'success'
+                          });
+                        }
+
+                        // Take latest 5 logs, reverse for chronological order
+                        return feedLogs.slice(-5).reverse().map((log, index) => {
+                          let dotColor = 'var(--text-muted)';
+                          if (log.type === 'success') dotColor = 'var(--success)';
+                          else if (log.type === 'info') dotColor = 'var(--info)';
+                          else if (log.type === 'warning') dotColor = 'var(--warning)';
+                          else if (log.type === 'danger') dotColor = 'var(--danger)';
+
+                          return (
+                            <div key={index} style={{ display: 'flex', gap: '12px', fontSize: '11px', borderLeft: '1.5px dashed var(--border-color)', paddingLeft: '12px', marginLeft: '6px', position: 'relative' }}>
+                              <div style={{ 
+                                position: 'absolute', 
+                                left: '-5px', 
+                                top: '3px', 
+                                width: '8px', 
+                                height: '8px', 
+                                borderRadius: '50%', 
+                                backgroundColor: dotColor,
+                                border: '1.5px solid var(--bg-primary)'
+                              }}></div>
+                              <div style={{ flexGrow: 1 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: '600', color: 'var(--text-primary)' }}>
+                                  <span>{log.title}</span>
+                                  <span style={{ color: 'var(--text-muted)', fontWeight: '400', fontSize: '9px' }}>{log.time}</span>
+                                </div>
+                                <div style={{ color: 'var(--text-secondary)', fontSize: '10px', marginTop: '2px' }}>{log.desc}</div>
+                              </div>
+                            </div>
+                          );
+                        });
+                      })()}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -2065,11 +2192,7 @@ export default function App() {
                           <td>{trip.planned_distance} km</td>
                           <td>{trip.cargo_weight.toLocaleString()} kg</td>
                           <td style={{ fontWeight: '600' }}>₹{trip.revenue.toLocaleString()}</td>
-                          <td>
-                            <span className={`badge ${badgeClass}`} style={{ fontSize: '10px', padding: '3px 8px' }}>
-                              {statusText}
-                            </span>
-                          </td>
+                          <td>{renderStatusPill(trip.status)}</td>
                         <td>
                           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                             {trip.status === 'Draft' && hasWriteAccess(user.role, 'Trips') && (

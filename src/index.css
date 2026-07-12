@@ -312,12 +312,39 @@ html, body {
   flex-direction: column;
   justify-content: space-between;
   gap: 12px;
-  transition: transform 0.2s ease, border-color 0.2s ease;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
 .kpi-card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-4px) scale(1.02);
   border-color: var(--primary-hover);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+}
+
+/* Ambient glow styles based on functional roles */
+.glow-primary:hover {
+  border-color: rgba(245, 158, 11, 0.4) !important;
+  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.15) !important;
+}
+
+.glow-success:hover {
+  border-color: rgba(16, 185, 129, 0.4) !important;
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.15) !important;
+}
+
+.glow-info:hover {
+  border-color: rgba(59, 130, 246, 0.4) !important;
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.15) !important;
+}
+
+.glow-danger:hover {
+  border-color: rgba(239, 68, 68, 0.4) !important;
+  box-shadow: 0 8px 25px rgba(239, 68, 68, 0.15) !important;
+}
+
+.glow-warning:hover {
+  border-color: rgba(245, 158, 11, 0.4) !important;
+  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.15) !important;
 }
 
 .kpi-header {
@@ -990,6 +1017,26 @@ html, body {
 .leaflet-div-icon {
   background: transparent !important;
   border: none !important;
+}
+
+/* Premium Animations */
+@keyframes pulseDot {
+  0% { transform: scale(0.95); opacity: 0.5; }
+  50% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(0.95); opacity: 0.5; }
+}
+
+.pulse-dot {
+  animation: pulseDot 1.8s infinite ease-in-out;
+}
+
+@keyframes cardFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: cardFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 

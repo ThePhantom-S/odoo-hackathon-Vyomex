@@ -35,6 +35,13 @@ const getCoordinatesForCity = (cityName) => {
   return { x, y };
 };
 
+// Helper to extract short facility name from full address
+const getShortAddressName = (addressString) => {
+  if (!addressString) return '';
+  const parts = addressString.split(':');
+  return parts[0].trim();
+};
+
 // Live Logistics Map component using Leaflet dynamically
 function LiveLogisticsMap({ trips, darkMode }) {
   const mapRef = React.useRef(null);
@@ -1415,7 +1422,7 @@ export default function App() {
                                     <span style={{ fontSize: '12px' }}>{trip.driver_name}</span>
                                   </div>
                                 </td>
-                                <td style={{ fontSize: '11px' }}>{trip.source} → {trip.destination}</td>
+                                <td style={{ fontSize: '11px' }} title={`${trip.source} → ${trip.destination}`}>{getShortAddressName(trip.source)} → {getShortAddressName(trip.destination)}</td>
                                 <td>
                                   <span className={`badge ${
                                     trip.status === 'Completed' ? 'badge-success' :
@@ -1966,7 +1973,7 @@ export default function App() {
                               <span>{trip.driver_name}</span>
                             </div>
                           </td>
-                          <td>{trip.source} → {trip.destination}</td>
+                          <td title={`${trip.source} → ${trip.destination}`}>{getShortAddressName(trip.source)} → {getShortAddressName(trip.destination)}</td>
                           <td>{trip.planned_distance} km</td>
                           <td>{trip.cargo_weight.toLocaleString()} kg</td>
                           <td style={{ fontWeight: '600' }}>₹{trip.revenue.toLocaleString()}</td>
@@ -2991,7 +2998,7 @@ export default function App() {
                         { value: '', label: '-- None --' },
                         ...trips.map(t => ({
                           value: t.id,
-                          label: `TR-${String(t.id).padStart(4, '0')} (${t.source} → ${t.destination})`
+                          label: `TR-${String(t.id).padStart(4, '0')} (${getShortAddressName(t.source)} → ${getShortAddressName(t.destination)})`
                         }))
                       ]}
                       value={formExpTrip}

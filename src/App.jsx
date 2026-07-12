@@ -1597,10 +1597,10 @@ export default function App() {
                       <div style={{ width: '100%', height: '300px' }}>
                         <ResponsiveContainer>
                           <BarChart data={analytics.monthlyChartData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
                             <XAxis dataKey="month" stroke="var(--text-secondary)" />
                             <YAxis stroke="var(--text-secondary)" />
-                            <Tooltip contentStyle={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)', color: '#fff' }} />
+                            <Tooltip contentStyle={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }} />
                             <Legend />
                             <Bar dataKey="revenue" fill="var(--success)" name="Revenue (₹)" />
                             <Bar dataKey="cost" fill="var(--danger)" name="Expenses (₹)" />
@@ -1615,10 +1615,10 @@ export default function App() {
                       <div style={{ width: '100%', height: '300px' }}>
                         <ResponsiveContainer>
                           <BarChart data={analytics.vehicles.slice(0, 5).sort((a,b)=> b.operational_cost - a.operational_cost)} layout="vertical">
-                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
                             <XAxis type="number" stroke="var(--text-secondary)" />
                             <YAxis type="category" dataKey="name_model" stroke="var(--text-secondary)" width={100} />
-                            <Tooltip contentStyle={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }} />
+                            <Tooltip contentStyle={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }} />
                             <Bar dataKey="operational_cost" fill="var(--warning)" name="Operating Cost (₹)">
                               {analytics.vehicles.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={index === 0 ? 'var(--danger)' : index === 1 ? 'var(--warning)' : 'var(--info)'} />
@@ -1668,7 +1668,7 @@ export default function App() {
                                     <Cell key={`cell-${index}`} fill={entry.color} />
                                   ))}
                                 </Pie>
-                                <Tooltip formatter={(value) => `₹${value.toLocaleString()}`} />
+                                <Tooltip formatter={(value) => `₹${value.toLocaleString()}`} contentStyle={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }} />
                                 <Legend />
                               </PieChart>
                             </ResponsiveContainer>
@@ -1683,10 +1683,10 @@ export default function App() {
                       <div style={{ width: '100%', height: '300px' }}>
                         <ResponsiveContainer>
                           <BarChart data={analytics.vehicles.filter(v => v.fuel_efficiency > 0)}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
                             <XAxis dataKey="registration_number" stroke="var(--text-secondary)" />
                             <YAxis stroke="var(--text-secondary)" />
-                            <Tooltip contentStyle={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)', color: '#fff' }} />
+                            <Tooltip contentStyle={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }} />
                             <Legend />
                             <Bar dataKey="fuel_efficiency" fill="var(--success)" name="Efficiency (km/L)" />
                           </BarChart>
@@ -1817,8 +1817,8 @@ export default function App() {
 
           {/* 1. Vehicle Form Modal */}
           {vehicleModal && (
-            <div className="modal-overlay">
-              <div className="modal-content">
+            <div className="modal-overlay" onClick={() => setVehicleModal(false)}>
+              <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
                   <h3 className="modal-title">{selectedVehicle ? 'Update Vehicle' : 'Register New Vehicle'}</h3>
                   <button className="modal-close" onClick={() => setVehicleModal(false)}><X size={20} /></button>
@@ -1926,8 +1926,8 @@ export default function App() {
 
           {/* 2. Driver Form Modal */}
           {driverModal && (
-            <div className="modal-overlay">
-              <div className="modal-content">
+            <div className="modal-overlay" onClick={() => setDriverModal(false)}>
+              <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
                   <h3 className="modal-title">{selectedDriver ? 'Update Driver Profile' : 'Register Driver Profile'}</h3>
                   <button className="modal-close" onClick={() => setDriverModal(false)}><X size={20} /></button>
@@ -2037,8 +2037,8 @@ export default function App() {
 
           {/* 3. Trip Planner Modal */}
           {tripModal && (
-            <div className="modal-overlay">
-              <div className="modal-content">
+            <div className="modal-overlay" onClick={() => setTripModal(false)}>
+              <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
                   <h3 className="modal-title">Plan Cargo Trip</h3>
                   <button className="modal-close" onClick={() => setTripModal(false)}><X size={20} /></button>
@@ -2115,8 +2115,8 @@ export default function App() {
 
           {/* 4. Complete Trip Modal */}
           {completeTripModal && (
-            <div className="modal-overlay">
-              <div className="modal-content">
+            <div className="modal-overlay" onClick={() => setCompleteTripModal(null)}>
+              <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
                   <h3 className="modal-title">Complete Trip TR-{String(completeTripModal.id).padStart(4, '0')}</h3>
                   <button className="modal-close" onClick={() => setCompleteTripModal(null)}><X size={20} /></button>
@@ -2174,8 +2174,8 @@ export default function App() {
 
           {/* 5. Maintenance Form Modal */}
           {maintModal && (
-            <div className="modal-overlay">
-              <div className="modal-content">
+            <div className="modal-overlay" onClick={() => setMaintModal(false)}>
+              <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
                   <h3 className="modal-title">Log Service Record</h3>
                   <button className="modal-close" onClick={() => setMaintModal(false)}><X size={20} /></button>
@@ -2227,8 +2227,8 @@ export default function App() {
 
           {/* 6. Fuel Log Form Modal */}
           {fuelModal && (
-            <div className="modal-overlay">
-              <div className="modal-content">
+            <div className="modal-overlay" onClick={() => setFuelModal(false)}>
+              <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
                   <h3 className="modal-title">Record Fuel Purchase</h3>
                   <button className="modal-close" onClick={() => setFuelModal(false)}><X size={20} /></button>
@@ -2275,8 +2275,8 @@ export default function App() {
 
           {/* 7. Expense Form Modal */}
           {expenseModal && (
-            <div className="modal-overlay">
-              <div className="modal-content">
+            <div className="modal-overlay" onClick={() => setExpenseModal(false)}>
+              <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
                   <h3 className="modal-title">Log Operational Expense</h3>
                   <button className="modal-close" onClick={() => setExpenseModal(false)}><X size={20} /></button>
@@ -2354,8 +2354,8 @@ export default function App() {
           )}
           {/* 8. Custom Confirmation Dialog Modal */}
           {confirmModal.open && (
-            <div className="modal-overlay">
-              <div className="modal-content" style={{ maxWidth: '420px' }}>
+            <div className="modal-overlay" onClick={() => setConfirmModal({ ...confirmModal, open: false })}>
+              <div className="modal-content" style={{ maxWidth: '420px' }} onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
                   <h3 className="modal-title" style={{ color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <ShieldAlert size={20} />

@@ -899,6 +899,8 @@ export default function App() {
   if (!token || !user) {
     return (
       <div className="login-screen">
+        <div className="login-bg-glow-1"></div>
+        <div className="login-bg-glow-2"></div>
         <div className="login-left">
           <div className="logo-container" style={{ border: 'none', paddingLeft: 0 }}>
             <div className="logo-icon" style={{ background: 'linear-gradient(135deg, var(--primary), #e07a00)' }}>TO</div>
@@ -952,8 +954,6 @@ export default function App() {
         </div>
  
         <div className="login-right">
-          <div className="login-bg-glow-1"></div>
-          <div className="login-bg-glow-2"></div>
           
           <div className="login-card">
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: '700', marginBottom: '8px', color: 'var(--text-primary)' }}>Sign in</h2>

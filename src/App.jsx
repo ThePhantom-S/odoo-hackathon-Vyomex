@@ -2113,22 +2113,6 @@ export default function App() {
                     {trips.map(trip => {
                       const isHeavy = trip.cargo_weight > 5000;
                       
-                      let badgeClass = 'badge-muted';
-                      let statusText = trip.status;
-                      
-                      if (trip.status === 'Completed') {
-                        badgeClass = 'badge-success';
-                        statusText = 'Completed';
-                      } else if (trip.status === 'Dispatched') {
-                        badgeClass = 'badge-info';
-                        statusText = 'Running';
-                      } else if (trip.status === 'Cancelled') {
-                        badgeClass = 'badge-danger';
-                        statusText = 'Cancelled';
-                      } else if (trip.status === 'Draft') {
-                        badgeClass = 'badge-muted';
-                        statusText = 'Draft';
-                      }
 
                       return (
                         <tr key={trip.id}>

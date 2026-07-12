@@ -177,13 +177,13 @@ export const initDb = async () => {
   if (vehicleCount.count === 0) {
     console.log('Seeding initial vehicles...');
     await run('INSERT INTO vehicles (registration_number, name_model, type, max_load_capacity, odometer, acquisition_cost, status) VALUES (?, ?, ?, ?, ?, ?, ?)', [
-      'GJ01AB452', 'VAN-05 (Tata Ace)', 'Van', 500.0, 74000.0, 620000.0, 'On Trip'
+      'GJ01AB452', 'VAN-05 (Tata Ace)', 'Van', 500.0, 77200.0, 620000.0, 'On Trip'
     ]);
     await run('INSERT INTO vehicles (registration_number, name_model, type, max_load_capacity, odometer, acquisition_cost, status) VALUES (?, ?, ?, ?, ?, ?, ?)', [
       'GJ01AB998', 'TRUCK-11 (Ashok Leyland)', 'Truck', 5000.0, 182000.0, 2450000.0, 'On Trip'
     ]);
     await run('INSERT INTO vehicles (registration_number, name_model, type, max_load_capacity, odometer, acquisition_cost, status) VALUES (?, ?, ?, ?, ?, ?, ?)', [
-      'GJ01AB120', 'MINI-03 (Mahindra Supro)', 'Mini', 1000.0, 66000.0, 410000.0, 'In Shop'
+      'GJ01AB120', 'MINI-03 (Mahindra Supro)', 'Mini', 1000.0, 68900.0, 410000.0, 'In Shop'
     ]);
     await run('INSERT INTO vehicles (registration_number, name_model, type, max_load_capacity, odometer, acquisition_cost, status) VALUES (?, ?, ?, ?, ?, ?, ?)', [
       'GJ01AB008', 'VAN-09 (Mahindra Jeeto)', 'Van', 750.0, 241900.0, 590000.0, 'Retired'

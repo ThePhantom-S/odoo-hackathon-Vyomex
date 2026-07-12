@@ -1912,22 +1912,34 @@ export default function App() {
                     </h3>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                    {vehicles.filter(v => v.odometer >= 8000).slice(0, 3).map(v => {
-                      const limit = 10000;
-                      const rem = Math.max(0, limit - v.odometer);
-                      const pct = Math.min(100, Math.round((v.odometer / limit) * 100));
-                      const dueDays = Math.ceil(rem / 100);
+                     {vehicles.filter(v => v.status !== 'Retired').slice(0, 3).map(v => {
+                      const serviceInterval = 10000;
+                      const nextServiceOdo = Math.ceil((v.odometer + 1) / serviceInterval) * serviceInterval;
+                      const rem = nextServiceOdo - v.odometer;
+                      const pct = Math.round(((v.odometer % serviceInterval) / serviceInterval) * 100);
+                      const dueDays = Math.max(1, Math.ceil(rem / 120)); // Assume 120 km average travel per day
+                      
+                      const getDueDateEst = (days) => {
+                        const date = new Date();
+                        date.setDate(date.getDate() + days);
+                        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                      };
+
+                      let statusColor = 'var(--success)';
+                      if (rem <= 1500) statusColor = 'var(--danger)';
+                      else if (rem <= 3500) statusColor = 'var(--warning)';
+
                       return (
                         <div key={v.registration_number} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
                             <span style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{v.registration_number} ({v.name_model})</span>
-                            <span style={{ color: rem <= 500 ? 'var(--danger)' : 'var(--warning)', fontWeight: '600' }}>{rem} km left</span>
+                            <span style={{ color: statusColor, fontWeight: '700' }}>{rem.toLocaleString()} km left</span>
                           </div>
                           {/* Linear progress bar */}
                           <div style={{ width: '100%', height: '8px', backgroundColor: 'var(--border-color)', borderRadius: '4px', overflow: 'hidden' }}>
-                            <div style={{ width: `${pct}%`, height: '100%', backgroundColor: rem <= 500 ? 'var(--danger)' : 'var(--warning)' }}></div>
+                            <div style={{ width: `${pct}%`, height: '100%', backgroundColor: statusColor }}></div>
                           </div>
-                          <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Due: July 16 (Est. {dueDays} days)</span>
+                          <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Due: {getDueDateEst(dueDays)} (Est. {dueDays} days)</span>
                         </div>
                       );
                     })}

@@ -1281,8 +1281,8 @@ export default function App() {
                     {/* Hero Card: Active Trips */}
                     <div className="kpi-card" style={{ 
                       background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95))', 
-                      border: '1px solid rgba(245, 158, 11, 0.3)',
-                      boxShadow: '0 0 20px rgba(245, 158, 11, 0.1)',
+                      border: '1px solid rgba(79, 70, 229, 0.3)',
+                      boxShadow: '0 0 20px rgba(79, 70, 229, 0.1)',
                       position: 'relative',
                       overflow: 'hidden'
                     }}>
@@ -1405,7 +1405,7 @@ export default function App() {
                                   {sparkData.map((entry, index) => (
                                     <Cell 
                                       key={`cell-${index}`} 
-                                      fill={index === sparkData.length - 1 ? 'var(--primary)' : 'rgba(245, 158, 11, 0.3)'} 
+                                      fill={index === sparkData.length - 1 ? 'var(--primary)' : 'rgba(79, 70, 229, 0.3)'} 
                                     />
                                   ))}
                                 </Bar>
@@ -1467,7 +1467,7 @@ export default function App() {
               ) : (
                 /* Fallback basic stats */
                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '20px', marginBottom: '32px' }}>
-                  <div className="kpi-card" style={{ background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95))', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
+                  <div className="kpi-card" style={{ background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95))', border: '1px solid rgba(79, 70, 229, 0.3)' }}>
                     <div className="kpi-header">
                       <span className="kpi-title" style={{ color: 'var(--primary)' }}>Active Cargo Dispatches</span>
                     </div>
@@ -3303,7 +3303,7 @@ export default function App() {
                       {/* Route Line Path */}
                       <path 
                         d={`M ${src.x} ${src.y} L ${dest.x} ${dest.y}`} 
-                        stroke="rgba(245, 158, 11, 0.2)" 
+                        stroke="rgba(79, 70, 229, 0.2)" 
                         strokeWidth="3" 
                         fill="none" 
                       />

@@ -986,4 +986,10 @@ html, body {
   }
 }
 
+/* Fix Leaflet Div Icon Background */
+.leaflet-div-icon {
+  background: transparent !important;
+  border: none !important;
+}
+
 

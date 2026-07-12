@@ -100,9 +100,16 @@ function LiveLogisticsMap({ trips, darkMode }) {
 
       const markerIcon = window.L.divIcon({
         className: 'custom-map-marker',
-        html: `<div style="background-color: var(--primary); border: 2px solid #fff; border-radius: 50%; width: 12px; height: 12px; box-shadow: 0 0 10px var(--primary);"></div>`,
-        iconSize: [12, 12],
-        iconAnchor: [6, 6]
+        html: `
+          <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 24px; height: 24px;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));">
+              <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2ZM12 11.5C10.62 11.5 9.5 10.38 9.5 9C9.5 7.62 10.62 6.5 12 6.5C13.38 6.5 14.5 7.62 14.5 9C14.5 10.38 13.38 11.5 12 11.5Z" fill="var(--primary)" stroke="#ffffff" stroke-width="1.5"/>
+            </svg>
+          </div>
+        `,
+        iconSize: [24, 24],
+        iconAnchor: [12, 24],
+        popupAnchor: [0, -24]
       });
 
       window.L.marker(startLatLng, { icon: markerIcon })

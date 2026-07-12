@@ -947,4 +947,43 @@ html, body {
   color: var(--text-muted) !important;
 }
 
+/* Responsive Notifications Dropdown */
+.notifications-dropdown {
+  position: absolute;
+  top: 48px;
+  right: 0;
+  width: 320px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-main);
+  z-index: 9999;
+  padding: 16px;
+  max-height: 360px;
+  overflow-y: auto;
+  animation: dropdownFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    transform: translateY(10px) scale(0.98);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .notifications-dropdown {
+    position: fixed;
+    top: 75px;
+    left: 16px;
+    right: 16px;
+    width: auto;
+    max-height: 300px;
+  }
+}
+
 

@@ -980,20 +980,7 @@ export default function App() {
 
               {/* Dropdown Alerts Panel */}
               {notifPanelOpen && (
-                <div style={{ 
-                  position: 'absolute', 
-                  top: '40px', 
-                  right: 0, 
-                  width: '320px', 
-                  backgroundColor: 'var(--bg-secondary)', 
-                  border: '1px solid var(--border-color)', 
-                  borderRadius: 'var(--border-radius-md)', 
-                  boxShadow: 'var(--shadow-main)', 
-                  zIndex: 9999, 
-                  padding: '16px',
-                  maxHeight: '360px',
-                  overflowY: 'auto'
-                }}>
+                <div className="notifications-dropdown">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
                     <span style={{ fontWeight: '600', fontSize: '13px', color: 'var(--text-primary)' }}>System Compliance Alerts</span>
                     <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{notificationAlerts.length} Active</span>
@@ -1136,7 +1123,7 @@ export default function App() {
                       </div>
                       <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '12px' }}>
                         <span style={{ fontSize: '32px', fontWeight: '700', fontFamily: 'var(--font-display)' }}>{analytics.kpis.driversOnDuty}</span>
-                        <span style={{ fontSize: '11px', color: 'var(--success)', fontWeight: '600' }}>🟢 Active</span>
+                        <span style={{ fontSize: '11px', color: 'var(--success)', fontWeight: '600' }}>● Active</span>
                       </div>
                       <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginTop: '8px' }}>
                         Registry Total: {drivers.length}

@@ -141,6 +141,16 @@ function LiveLogisticsMap({ trips, darkMode }) {
   return <div ref={mapRef} style={{ width: '100%', height: '100%', borderRadius: 'var(--border-radius-sm)' }} />;
 }
 
+// Real, proper logistics hubs and depot facility addresses
+const LOGISTICS_HUBS = [
+  { value: 'Gandhinagar Depot: Sector 25, GIDC Electronics Estate, Gandhinagar, Gujarat 382025', label: 'Gandhinagar Depot (Sector 25, GIDC)' },
+  { value: 'Ahmedabad Hub: Plot 45, GIDC Industrial Estate, Vatva, Ahmedabad, Gujarat 382445', label: 'Ahmedabad Hub (Plot 45, Vatva GIDC)' },
+  { value: 'Sanand Warehouse: Sarkhej-Viramgam Highway, Sanand GIDC, Ahmedabad, Gujarat 382110', label: 'Sanand Warehouse (Sanand GIDC)' },
+  { value: 'Vadodara Transit Hub: National Highway 8, Ranoli, Vadodara, Gujarat 391350', label: 'Vadodara Transit Hub (NH8, Ranoli)' },
+  { value: 'Surat Distribution Center: GIDC Industrial Estate, Sachin, Surat, Gujarat 394230', label: 'Surat Distribution Center (Sachin GIDC)' },
+  { value: 'Mumbai Logistics Port: JNPT Terminal Road, Nhava Sheva, Navi Mumbai, Maharashtra 400707', label: 'Mumbai Logistics Port (JNPT, Navi Mumbai)' }
+];
+
 // Custom UI Dropdown Component
 function CustomSelect({ options, value, onChange, placeholder = 'Select option', disabled = false, className = '', name, style, required = false }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -280,6 +290,8 @@ export default function App() {
   const [formDrvStatus, setFormDrvStatus] = useState('Available');
   const [formTripVeh, setFormTripVeh] = useState('');
   const [formTripDrv, setFormTripDrv] = useState('');
+  const [formTripSource, setFormTripSource] = useState(LOGISTICS_HUBS[0].value);
+  const [formTripDest, setFormTripDest] = useState(LOGISTICS_HUBS[1].value);
   const [formMaintVeh, setFormMaintVeh] = useState('');
   const [formExpVeh, setFormExpVeh] = useState('');
   const [formExpType, setFormExpType] = useState('Toll');
@@ -2674,11 +2686,37 @@ export default function App() {
                   <div className="form-row">
                     <div className="form-group">
                       <label>SOURCE DEPOT</label>
-                      <input type="text" name="source" className="form-control" placeholder="Depot A" required />
+                      <CustomSelect 
+                        name="source"
+                        placeholder="-- Select Source --"
+                        options={LOGISTICS_HUBS}
+                        value={formTripSource}
+                        onChange={val => {
+                          setFormTripSource(val);
+                          if (val === formTripDest) {
+                            const other = LOGISTICS_HUBS.find(h => h.value !== val);
+                            if (other) setFormTripDest(other.value);
+                          }
+                        }}
+                        required={true}
+                      />
                     </div>
                     <div className="form-group">
                       <label>DESTINATION HUB</label>
-                      <input type="text" name="destination" className="form-control" placeholder="Depot B" required />
+                      <CustomSelect 
+                        name="destination"
+                        placeholder="-- Select Destination --"
+                        options={LOGISTICS_HUBS}
+                        value={formTripDest}
+                        onChange={val => {
+                          setFormTripDest(val);
+                          if (val === formTripSource) {
+                            const other = LOGISTICS_HUBS.find(h => h.value !== val);
+                            if (other) setFormTripSource(other.value);
+                          }
+                        }}
+                        required={true}
+                      />
                     </div>
                   </div>
                   

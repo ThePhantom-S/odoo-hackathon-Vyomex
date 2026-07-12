@@ -217,7 +217,7 @@ export const initDb = async () => {
     // Trip 1
     await run(`
       INSERT INTO trips (id, source, destination, vehicle_reg_no, driver_id, cargo_weight, planned_distance, revenue, actual_fuel_consumed, final_odometer, status, created_at, completed_at)
-      VALUES (1, 'Gandhinagar Depot', 'Ahmedabad Hub', 'GJ01AB452', 1, 400.0, 30.0, 4500.0, 4.0, 74030.0, 'Completed', '2026-07-05 09:00:00', '2026-07-05 10:30:00')
+      VALUES (1, 'Gandhinagar Depot: Sector 25, GIDC Electronics Estate, Gandhinagar, Gujarat 382025', 'Ahmedabad Hub: Plot 45, GIDC Industrial Estate, Vatva, Ahmedabad, Gujarat 382445', 'GJ01AB452', 1, 400.0, 30.0, 4500.0, 4.0, 74030.0, 'Completed', '2026-07-05 09:00:00', '2026-07-05 10:30:00')
     `);
     await run("INSERT INTO fuel_logs (vehicle_reg_no, liters, cost, date, trip_id) VALUES ('GJ01AB452', 4.0, 380.0, '2026-07-05', 1)");
     await run("INSERT INTO expenses (vehicle_reg_no, trip_id, type, cost, date, description) VALUES ('GJ01AB452', 1, 'Toll', 120.0, '2026-07-05', 'NH8 Toll')");
@@ -226,7 +226,7 @@ export const initDb = async () => {
     // Trip 2
     await run(`
       INSERT INTO trips (id, source, destination, vehicle_reg_no, driver_id, cargo_weight, planned_distance, revenue, actual_fuel_consumed, final_odometer, status, created_at, completed_at)
-      VALUES (2, 'Vatva Industrial Area', 'Sanand Warehouse', 'GJ01AB998', 5, 4500.0, 60.0, 18000.0, 15.0, 182060.0, 'Completed', '2026-07-06 08:00:00', '2026-07-06 11:00:00')
+      VALUES (2, 'Sanand Warehouse: Sarkhej-Viramgam Highway, Sanand GIDC, Ahmedabad, Gujarat 382110', 'Vadodara Transit Hub: National Highway 8, Ranoli, Vadodara, Gujarat 391350', 'GJ01AB998', 5, 4500.0, 60.0, 18000.0, 15.0, 182060.0, 'Completed', '2026-07-06 08:00:00', '2026-07-06 11:00:00')
     `);
     await run("INSERT INTO fuel_logs (vehicle_reg_no, liters, cost, date, trip_id) VALUES ('GJ01AB998', 15.0, 1425.0, '2026-07-06', 2)");
     await run("INSERT INTO expenses (vehicle_reg_no, trip_id, type, cost, date, description) VALUES ('GJ01AB998', 2, 'Toll', 340.0, '2026-07-06', 'Ring Road Toll')");

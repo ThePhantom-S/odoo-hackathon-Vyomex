@@ -1199,7 +1199,26 @@ export default function App() {
                           <td>{v.name_model}</td>
                           <td>{v.type}</td>
                           <td>{v.max_load_capacity} kg</td>
-                          <td>{v.odometer.toLocaleString()} km</td>
+                          <td>
+                             <div>{v.odometer.toLocaleString()} km</div>
+                             {v.odometer >= 10000 && v.status === 'Available' && (
+                               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
+                                 <span className="badge badge-warning" style={{ fontSize: '9px', padding: '2px 6px', textTransform: 'none' }}>Service Due</span>
+                                 {hasWriteAccess(user.role, 'Maintenance') && (
+                                   <button 
+                                     type="button"
+                                     style={{ background: 'none', border: 'none', color: 'var(--primary)', textDecoration: 'underline', fontSize: '10px', padding: 0, cursor: 'pointer', fontWeight: '500' }}
+                                     onClick={() => {
+                                       setFormMaintVeh(v.registration_number);
+                                       setMaintModal(true);
+                                     }}
+                                   >
+                                     Schedule
+                                   </button>
+                                 )}
+                               </div>
+                             )}
+                           </td>
                           <td>₹{v.acquisition_cost.toLocaleString()}</td>
                           <td>
                             <span className={`badge ${
@@ -1231,7 +1250,75 @@ export default function App() {
           )}
 
           {activeTab === 'Drivers' && (
-            <div className="card">
+            <div>
+              {/* Compliance Alerts Panel */}
+              {(() => {
+                const today = new Date();
+                const expiringSoonDrivers = drivers.filter(d => {
+                  if (!d.license_expiry_date) return false;
+                  const expiry = new Date(d.license_expiry_date);
+                  const diffTime = expiry - today;
+                  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                  return diffDays <= 30; // expiring in 30 days or already expired
+                });
+
+                if (expiringSoonDrivers.length === 0) return null;
+
+                return (
+                  <div className="card" style={{ border: '1px solid rgba(239, 68, 68, 0.2)', background: 'rgba(239, 68, 68, 0.03)', padding: '20px', marginBottom: '24px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                      <AlertTriangle size={18} style={{ color: 'var(--danger)' }} />
+                      <h4 style={{ color: 'var(--danger)', fontSize: '15px', fontWeight: '600', margin: 0 }}>Driver License Expiry Compliance Warnings ({expiringSoonDrivers.length})</h4>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {expiringSoonDrivers.map(d => {
+                        const isExpired = new Date(d.license_expiry_date) < today;
+                        return (
+                          <div key={d.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', backgroundColor: 'var(--bg-tertiary)', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                            <div>
+                              <span style={{ fontWeight: '600', color: 'var(--text-primary)', marginRight: '8px' }}>{d.name}</span>
+                              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>License: {d.license_number}</span>
+                              <div style={{ fontSize: '12px', marginTop: '4px' }}>
+                                {isExpired ? (
+                                  <span style={{ color: 'var(--danger)', fontWeight: '600' }}>Expired on {d.license_expiry_date}</span>
+                                ) : (
+                                  <span style={{ color: 'var(--warning)', fontWeight: '500' }}>Expiring on {d.license_expiry_date} (within 30 days)</span>
+                                )}
+                              </div>
+                            </div>
+                            {hasWriteAccess(user.role, 'Drivers') && (
+                              <button 
+                                className="btn btn-secondary" 
+                                style={{ padding: '6px 12px', fontSize: '12px', borderColor: 'var(--warning)', color: 'var(--warning)' }}
+                                onClick={async () => {
+                                  try {
+                                    const res = await fetch(`${API_BASE}/drivers/${d.id}/send-reminder`, {
+                                      method: 'POST',
+                                      headers: { 'Authorization': `Bearer ${token}` }
+                                    });
+                                    const data = await res.json();
+                                    if (res.ok) {
+                                      triggerMessage(`Email simulation dispatched to ${d.name}!`);
+                                    } else {
+                                      triggerMessage(data.error || 'Failed to send simulation', 'danger');
+                                    }
+                                  } catch (err) {
+                                    triggerMessage('Network error occurred.', 'danger');
+                                  }
+                                }}
+                              >
+                                Send Reminder Email
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <div className="card">
               <div className="card-header">
                 <h3 className="card-title">Drivers & Compliance Profiles</h3>
                 {hasWriteAccess(user.role, 'Drivers') && (
@@ -1344,7 +1431,8 @@ export default function App() {
                 </table>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
           {activeTab === 'Trips' && (
             <div className="card">

@@ -2645,7 +2645,7 @@ export default function App() {
                                         <Play size={12} fill="currentColor" style={{ marginLeft: '1px' }} />
                                       </button>
                                       <button 
-                                        className="btn btn-secondary" 
+                                        className="btn btn-danger" 
                                         style={{ width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }} 
                                         onClick={() => handleTripCancel(trip.id)}
                                         title="Cancel Trip"
@@ -2659,14 +2659,14 @@ export default function App() {
                                     <>
                                       <button 
                                         className="btn btn-success" 
-                                        style={{ width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, color: '#fff' }} 
+                                        style={{ width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }} 
                                         onClick={() => setCompleteTripModal(trip)}
                                         title="Complete Trip"
                                       >
                                         <Check size={12} strokeWidth={3} />
                                       </button>
                                       <button 
-                                        className="btn btn-secondary" 
+                                        className="btn btn-danger" 
                                         style={{ width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }} 
                                         onClick={() => handleTripCancel(trip.id)}
                                         title="Cancel Trip"

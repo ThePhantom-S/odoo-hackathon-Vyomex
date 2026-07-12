@@ -563,6 +563,19 @@ html, body {
   box-shadow: 0 8px 20px rgba(239, 68, 68, 0.3);
 }
 
+.btn-success {
+  background-color: var(--success-bg);
+  border: 1px solid var(--success);
+  color: var(--success);
+}
+
+.btn-success:hover:not(:disabled) {
+  background-color: var(--success);
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+}
+
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;

@@ -41,23 +41,23 @@ flowchart TB
     GroqInference["Groq Cloud AI Gateway (Llama 3.3-70B)"]
 
     %% Subgraphs (Tiers)
-    subgraph UI_Tier [1. Presentation Layer (Frontend)]
+    subgraph UI_Tier ["1. Presentation Layer (Frontend)"]
         ViteDev --> ReactUI
         ReactUI --> ThreeGlobe
         ReactUI --> RechartsSVG
     end
 
-    subgraph Gateway_Tier [2. Transport Layer (Proxy)]
+    subgraph Gateway_Tier ["2. Transport Layer (Proxy)"]
         ViteProxy
     end
 
-    subgraph Logic_Tier [3. Application Layer (Backend)]
+    subgraph Logic_Tier ["3. Application Layer (Backend)"]
         ExpressServer --> JWTMiddleware
         JWTMiddleware --> ReportsRouter
         JWTMiddleware --> ResourceRouters
     end
 
-    subgraph Storage_Inference_Tier [4. Data & Intelligence Layer]
+    subgraph Storage_Inference_Tier ["4. Data & Intelligence Layer"]
         SQLiteDB
         GroqInference
     end

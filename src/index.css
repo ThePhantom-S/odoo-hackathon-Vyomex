@@ -773,7 +773,7 @@ html, body {
 /* Toast Notifications */
 .toast-notification {
   position: fixed;
-  top: 24px;
+  bottom: 24px;
   right: 24px;
   z-index: 10000;
   min-width: 320px;
@@ -791,7 +791,7 @@ html, body {
 
 @keyframes toastSlideIn {
   from {
-    transform: translateY(-20px) scale(0.95);
+    transform: translateY(20px) scale(0.95);
     opacity: 0;
   }
   to {

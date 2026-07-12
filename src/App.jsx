@@ -10,6 +10,31 @@ import {
   Tooltip, Legend, LineChart, Line, Cell, CartesianGrid, PieChart, Pie
 } from 'recharts';
 
+// Utility to get coordinates for a city
+const getCoordinatesForCity = (cityName) => {
+  const name = String(cityName || '').trim().toLowerCase();
+  if (name.includes('gandhinagar') || name.includes('delhi')) {
+    return { x: 80, y: 70 };
+  }
+  if (name.includes('ahmedabad') || name.includes('mumbai')) {
+    return { x: 120, y: 160 };
+  }
+  if (name.includes('vatva') || name.includes('bengaluru')) {
+    return { x: 260, y: 220 };
+  }
+  if (name.includes('sanand') || name.includes('chennai')) {
+    return { x: 320, y: 150 };
+  }
+  
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const x = 60 + Math.abs((hash * 17) % 280);
+  const y = 60 + Math.abs((hash * 31) % 180);
+  return { x, y };
+};
+
 // Custom UI Dropdown Component
 function CustomSelect({ options, value, onChange, placeholder = 'Select option', disabled = false, className = '', name, style, required = false }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -2945,30 +2970,6 @@ export default function App() {
 
           {/* 9. Live Route Tracking Modal */}
           {trackingTrip && (() => {
-            const getCoordinatesForCity = (cityName) => {
-              const name = String(cityName || '').trim().toLowerCase();
-              if (name.includes('gandhinagar') || name.includes('delhi')) {
-                return { x: 80, y: 70 };
-              }
-              if (name.includes('ahmedabad') || name.includes('mumbai')) {
-                return { x: 120, y: 160 };
-              }
-              if (name.includes('vatva') || name.includes('bengaluru')) {
-                return { x: 260, y: 220 };
-              }
-              if (name.includes('sanand') || name.includes('chennai')) {
-                return { x: 320, y: 150 };
-              }
-              
-              let hash = 0;
-              for (let i = 0; i < name.length; i++) {
-                hash = name.charCodeAt(i) + ((hash << 5) - hash);
-              }
-              const x = 60 + Math.abs((hash * 17) % 280);
-              const y = 60 + Math.abs((hash * 31) % 180);
-              return { x, y };
-            };
-
             const src = getCoordinatesForCity(trackingTrip.source);
             const dest = getCoordinatesForCity(trackingTrip.destination);
 

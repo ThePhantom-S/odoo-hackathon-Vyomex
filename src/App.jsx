@@ -1,0 +1,2015 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  LayoutDashboard, Truck, Users, Route, Wrench, 
+  Fuel, TrendingUp, Settings, LogOut, Plus, 
+  Search, Filter, Calendar, DollarSign, ShieldAlert, 
+  FileSpreadsheet, Check, X, Moon, Sun, AlertTriangle
+} from 'lucide-react';
+import { 
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, 
+  Tooltip, Legend, LineChart, Line, Cell 
+} from 'recharts';
+
+const API_BASE = '/api';
+
+export default function App() {
+  const [token, setToken] = useState(localStorage.getItem('token') || '');
+  const [user, setUser] = useState(null);
+  
+  // Login states
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [authError, setAuthError] = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
+
+  // App settings & UI states
+  const [darkMode, setDarkMode] = useState(true);
+  const [activeTab, setActiveTab] = useState('Dashboard');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [globalMessage, setGlobalMessage] = useState(null);
+
+  // Core Data states
+  const [vehicles, setVehicles] = useState([]);
+  const [drivers, setDrivers] = useState([]);
+  const [trips, setTrips] = useState([]);
+  const [maintenanceLogs, setMaintenanceLogs] = useState([]);
+  const [expenses, setExpenses] = useState([]);
+  const [fuelLogs, setFuelLogs] = useState([]);
+  const [analytics, setAnalytics] = useState(null);
+
+  // Loading states
+  const [dataLoading, setDataLoading] = useState(false);
+
+  // Modals state
+  const [vehicleModal, setVehicleModal] = useState(false);
+  const [selectedVehicle, setSelectedVehicle] = useState(null);
+  
+  const [driverModal, setDriverModal] = useState(false);
+  const [selectedDriver, setSelectedDriver] = useState(null);
+
+  const [tripModal, setTripModal] = useState(false);
+  const [completeTripModal, setCompleteTripModal] = useState(null); // stores trip to complete
+
+  const [maintModal, setMaintModal] = useState(false);
+  
+  const [expenseModal, setExpenseModal] = useState(false);
+  const [fuelModal, setFuelModal] = useState(false);
+
+  // Filter & Search states
+  const [vehicleSearch, setVehicleSearch] = useState('');
+  const [vehicleTypeFilter, setVehicleTypeFilter] = useState('All');
+  const [vehicleStatusFilter, setVehicleStatusFilter] = useState('All');
+
+  const [driverSearch, setDriverSearch] = useState('');
+  const [driverStatusFilter, setDriverStatusFilter] = useState('All');
+
+  // Trigger global message
+  const triggerMessage = (text, type = 'success') => {
+    setGlobalMessage({ text, type });
+    setTimeout(() => setGlobalMessage(null), 5000);
+  };
+
+  // Fetch current user details
+  useEffect(() => {
+    if (token) {
+      localStorage.setItem('token', token);
+      fetchUser();
+    } else {
+      localStorage.removeItem('token');
+      setUser(null);
+    }
+  }, [token]);
+
+  // Load database data once authenticated
+  useEffect(() => {
+    if (user) {
+      loadAllData();
+    }
+  }, [user]);
+
+  // Dark mode effect
+  useEffect(() => {
+    const root = window.document.documentElement;
+    if (darkMode) {
+      root.classList.remove('light-mode');
+    } else {
+      root.classList.add('light-mode');
+    }
+  }, [darkMode]);
+
+  const fetchUser = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/auth/me`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data.user);
+      } else {
+        // Token expired/invalid
+        setToken('');
+      }
+    } catch (err) {
+      console.error('Error verifying user:', err);
+      setToken('');
+    }
+  };
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setAuthError('');
+    setLoginLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setToken(data.token);
+        setUser(data.user);
+        triggerMessage(`Welcome back, ${data.user.name}!`);
+      } else {
+        setAuthError(data.error || 'Invalid credentials');
+      }
+    } catch (err) {
+      setAuthError('Connection to server failed.');
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  const handleDemoLogin = (demoEmail) => {
+    setEmail(demoEmail);
+    setPassword('password123');
+    // Automate form submission
+    setTimeout(() => {
+      const form = document.getElementById('login-form');
+      if (form) form.requestSubmit();
+    }, 100);
+  };
+
+  const handleLogout = () => {
+    setToken('');
+    setUser(null);
+    setActiveTab('Dashboard');
+    triggerMessage('Successfully logged out.');
+  };
+
+  // Switch role dynamically (for easy RBAC evaluation)
+  const handleSimulatedRoleChange = (role) => {
+    if (user) {
+      const updatedUser = { ...user, role };
+      setUser(updatedUser);
+      triggerMessage(`Simulated role switched to: ${role}`, 'warning');
+      
+      // Reset tab if new role doesn't have access to current tab
+      const allowed = getAllowedTabs(role);
+      if (!allowed.includes(activeTab)) {
+        setActiveTab('Dashboard');
+      }
+    }
+  };
+
+  // Tab permissions configuration based on the Settings & RBAC matrix
+  const getAllowedTabs = (userRole) => {
+    if (!userRole) return ['Dashboard'];
+    
+    switch (userRole) {
+      case 'Fleet Manager':
+        return ['Dashboard', 'Fleet', 'Drivers', 'Trips', 'Maintenance', 'Fuel & Expenses', 'Reports & Analytics', 'Settings & RBAC'];
+      case 'Dispatcher':
+        return ['Dashboard', 'Fleet', 'Trips', 'Settings & RBAC'];
+      case 'Safety Officer':
+        return ['Dashboard', 'Drivers', 'Trips', 'Settings & RBAC'];
+      case 'Financial Analyst':
+        return ['Dashboard', 'Fleet', 'Fuel & Expenses', 'Reports & Analytics', 'Settings & RBAC'];
+      default:
+        return ['Dashboard'];
+    }
+  };
+
+  const hasWriteAccess = (userRole, tabName) => {
+    if (userRole === 'Fleet Manager') {
+      return ['Fleet', 'Drivers', 'Maintenance'].includes(tabName);
+    }
+    if (userRole === 'Dispatcher') {
+      return ['Trips'].includes(tabName);
+    }
+    if (userRole === 'Safety Officer') {
+      return ['Drivers'].includes(tabName);
+    }
+    if (userRole === 'Financial Analyst') {
+      return ['Fuel & Expenses'].includes(tabName);
+    }
+    return false;
+  };
+
+  // API Data Loaders
+  const loadAllData = async () => {
+    setDataLoading(true);
+    try {
+      const headers = { 'Authorization': `Bearer ${token}` };
+      const role = user.role;
+
+      // Conditional fetching based on RBAC permissions to prevent unauthorized 403 network responses
+      if (['Fleet Manager', 'Dispatcher', 'Financial Analyst'].includes(role)) {
+        const resVeh = await fetch(`${API_BASE}/vehicles`, { headers });
+        if (resVeh.ok) setVehicles(await resVeh.json());
+      }
+      
+      if (['Fleet Manager', 'Safety Officer'].includes(role)) {
+        const resDrv = await fetch(`${API_BASE}/drivers`, { headers });
+        if (resDrv.ok) setDrivers(await resDrv.json());
+      }
+
+      const resTrips = await fetch(`${API_BASE}/trips`, { headers });
+      if (resTrips.ok) setTrips(await resTrips.json());
+
+      if (['Fleet Manager', 'Financial Analyst'].includes(role)) {
+        const resMaint = await fetch(`${API_BASE}/maintenance`, { headers });
+        if (resMaint.ok) setMaintenanceLogs(await resMaint.json());
+
+        const resExp = await fetch(`${API_BASE}/expenses`, { headers });
+        if (resExp.ok) setExpenses(await resExp.json());
+
+        const resFuel = await fetch(`${API_BASE}/expenses/fuel-logs`, { headers });
+        if (resFuel.ok) setFuelLogs(await resFuel.json());
+
+        const resAnal = await fetch(`${API_BASE}/reports/analytics`, { headers });
+        if (resAnal.ok) setAnalytics(await resAnal.json());
+      } else {
+        // Minimal analytics for dashboard counters
+        // Since other roles cannot hit full reports/analytics, we compute basic KPIs on frontend
+      }
+    } catch (err) {
+      console.error('Error loading data:', err);
+    } finally {
+      setDataLoading(false);
+    }
+  };
+
+  // Helper to re-fetch and refresh dashboards
+  const refreshData = () => {
+    loadAllData();
+  };
+
+  // --- CRUD ACTIONS ---
+
+  // Vehicle Submit
+  const handleVehicleSubmit = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const payload = Object.fromEntries(formData.entries());
+    
+    const method = selectedVehicle ? 'PUT' : 'POST';
+    const endpoint = selectedVehicle 
+      ? `${API_BASE}/vehicles/${selectedVehicle.registration_number}`
+      : `${API_BASE}/vehicles`;
+
+    try {
+      const res = await fetch(endpoint, {
+        method,
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        triggerMessage(selectedVehicle ? 'Vehicle updated successfully!' : 'Vehicle registered successfully!');
+        setVehicleModal(false);
+        refreshData();
+      } else {
+        alert(data.error || 'Failed to submit vehicle data');
+      }
+    } catch (err) {
+      alert('Network error occured.');
+    }
+  };
+
+  // Delete Vehicle
+  const handleVehicleDelete = async (regNo) => {
+    if (!window.confirm(`Are you sure you want to delete vehicle ${regNo}?`)) return;
+    try {
+      const res = await fetch(`${API_BASE}/vehicles/${regNo}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        triggerMessage('Vehicle deleted successfully.');
+        refreshData();
+      } else {
+        alert(data.error || 'Failed to delete vehicle');
+      }
+    } catch (err) {
+      alert('Network error.');
+    }
+  };
+
+  // Driver Submit
+  const handleDriverSubmit = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const payload = Object.fromEntries(formData.entries());
+
+    const method = selectedDriver ? 'PUT' : 'POST';
+    const endpoint = selectedDriver 
+      ? `${API_BASE}/drivers/${selectedDriver.id}`
+      : `${API_BASE}/drivers`;
+
+    try {
+      const res = await fetch(endpoint, {
+        method,
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        triggerMessage(selectedDriver ? 'Driver profile updated!' : 'Driver profile registered!');
+        setDriverModal(false);
+        refreshData();
+      } else {
+        alert(data.error || 'Failed to submit driver profile');
+      }
+    } catch (err) {
+      alert('Network error.');
+    }
+  };
+
+  // Delete Driver
+  const handleDriverDelete = async (id) => {
+    if (!window.confirm('Delete driver profile?')) return;
+    try {
+      const res = await fetch(`${API_BASE}/drivers/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        triggerMessage('Driver deleted successfully.');
+        refreshData();
+      } else {
+        alert(data.error || 'Failed to delete driver');
+      }
+    } catch (err) {
+      alert('Network error.');
+    }
+  };
+
+  // Trip Creation
+  const handleTripCreate = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const payload = Object.fromEntries(formData.entries());
+
+    try {
+      const res = await fetch(`${API_BASE}/trips`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        triggerMessage('Draft trip created successfully.');
+        setTripModal(false);
+        refreshData();
+      } else {
+        alert(data.error || 'Failed to plan trip');
+      }
+    } catch (err) {
+      alert('Network error.');
+    }
+  };
+
+  // Trip Dispatch
+  const handleTripDispatch = async (tripId) => {
+    try {
+      const res = await fetch(`${API_BASE}/trips/${tripId}/dispatch`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        triggerMessage('Trip successfully dispatched!');
+        refreshData();
+      } else {
+        alert(data.error || 'Failed to dispatch trip');
+      }
+    } catch (err) {
+      alert('Network error.');
+    }
+  };
+
+  // Trip Completion
+  const handleTripComplete = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const payload = Object.fromEntries(formData.entries());
+
+    try {
+      const res = await fetch(`${API_BASE}/trips/${completeTripModal.id}/complete`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        triggerMessage('Trip completed! Odometer, fuel logs, and expenses automatically updated.');
+        setCompleteTripModal(null);
+        refreshData();
+      } else {
+        alert(data.error || 'Failed to complete trip');
+      }
+    } catch (err) {
+      alert('Network error.');
+    }
+  };
+
+  // Cancel Trip
+  const handleTripCancel = async (tripId) => {
+    if (!window.confirm('Are you sure you want to cancel this trip?')) return;
+    try {
+      const res = await fetch(`${API_BASE}/trips/${tripId}/cancel`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        triggerMessage('Trip cancelled.');
+        refreshData();
+      } else {
+        alert(data.error || 'Failed to cancel trip');
+      }
+    } catch (err) {
+      alert('Network error.');
+    }
+  };
+
+  // Log Maintenance
+  const handleMaintSubmit = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const payload = Object.fromEntries(formData.entries());
+
+    try {
+      const res = await fetch(`${API_BASE}/maintenance`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        triggerMessage('Vehicle sent to In Shop. Maintenance logged.');
+        setMaintModal(false);
+        refreshData();
+      } else {
+        alert(data.error || 'Failed to log maintenance record');
+      }
+    } catch (err) {
+      alert('Network error.');
+    }
+  };
+
+  // Complete Maintenance
+  const handleMaintComplete = async (logId) => {
+    try {
+      const res = await fetch(`${API_BASE}/maintenance/${logId}/complete`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        triggerMessage('Maintenance marked complete. Vehicle restored to Available.');
+        refreshData();
+      } else {
+        alert(data.error || 'Failed to complete maintenance');
+      }
+    } catch (err) {
+      alert('Network error.');
+    }
+  };
+
+  // Log Expense
+  const handleExpenseSubmit = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const payload = Object.fromEntries(formData.entries());
+
+    try {
+      const res = await fetch(`${API_BASE}/expenses`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        triggerMessage('Expense recorded.');
+        setExpenseModal(false);
+        refreshData();
+      } else {
+        alert(data.error || 'Failed to record expense');
+      }
+    } catch (err) {
+      alert('Network error.');
+    }
+  };
+
+  // Log Fuel
+  const handleFuelSubmit = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const payload = Object.fromEntries(formData.entries());
+
+    try {
+      const res = await fetch(`${API_BASE}/expenses/fuel-logs`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        triggerMessage('Fuel log saved.');
+        setFuelModal(false);
+        refreshData();
+      } else {
+        alert(data.error || 'Failed to log fuel data');
+      }
+    } catch (err) {
+      alert('Network error.');
+    }
+  };
+
+  // Export CSV download helper
+  const handleCSVExport = () => {
+    window.open(`${API_BASE}/reports/export-csv?authorization=Bearer ${token}`, '_blank');
+    triggerMessage('CSV download started.');
+  };
+
+  // --- RENDERS ---
+
+  if (!token || !user) {
+    return (
+      <div className="login-screen">
+        <div className="login-left">
+          <div className="logo-container" style={{ border: 'none', paddingLeft: 0 }}>
+            <div className="logo-icon">TO</div>
+            <div>
+              <div className="logo-text">TransitOps</div>
+              <div className="logo-subtitle">Fleet Management</div>
+            </div>
+          </div>
+          <h1 style={{ fontSize: '36px', fontWeight: '800', fontFamily: 'var(--font-display)', marginTop: '40px', lineHeight: '1.2' }}>
+            Smart Transport Operations Platform
+          </h1>
+          <p style={{ color: 'var(--text-secondary)', marginTop: '16px', lineHeight: '1.6', fontSize: '15px' }}>
+            Digitize your vehicles, drivers, dispatches, maintenance, and expenses from a single high-fidelity workspace. Enforce logic validations and view dynamic ROI calculations instantly.
+          </p>
+          <div style={{ marginTop: 'auto', borderTop: '1px solid var(--border-color)', paddingTop: '24px' }}>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>OD00 HACKATHON 2026</span>
+          </div>
+        </div>
+
+        <div className="login-right">
+          <div className="login-card">
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: '700', marginBottom: '8px' }}>Sign in</h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '24px' }}>Enter your credentials to manage fleet assets</p>
+            
+            {authError && (
+              <div className="alert-banner alert-banner-danger">
+                <ShieldAlert size={18} />
+                <span>{authError}</span>
+              </div>
+            )}
+
+            <form id="login-form" onSubmit={handleLogin}>
+              <div className="form-group">
+                <label>EMAIL ADDRESS</label>
+                <input 
+                  type="email" 
+                  className="form-control" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="manager@transitops.com"
+                  required 
+                />
+              </div>
+              <div className="form-group" style={{ marginBottom: '24px' }}>
+                <label>PASSWORD</label>
+                <input 
+                  type="password" 
+                  className="form-control" 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required 
+                />
+              </div>
+              <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '12px' }} disabled={loginLoading}>
+                {loginLoading ? 'Authenticating...' : 'Sign In'}
+              </button>
+            </form>
+
+            <div style={{ marginTop: '32px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                <div style={{ flexGrow: 1, height: '1px', backgroundColor: 'var(--border-color)' }}></div>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', letterSpacing: '0.5px' }}>EVALUATOR QUICK SIGN-IN</span>
+                <div style={{ flexGrow: 1, height: '1px', backgroundColor: 'var(--border-color)' }}></div>
+              </div>
+              
+              <div className="demo-account-grid">
+                <button className="demo-account-btn" onClick={() => handleDemoLogin('manager@transitops.com')}>
+                  <div className="demo-account-role">Fleet Manager</div>
+                  <div className="demo-account-name">Raven K.</div>
+                  <div className="demo-account-email">manager@transitops.com</div>
+                </button>
+                <button className="demo-account-btn" onClick={() => handleDemoLogin('dispatcher@transitops.com')}>
+                  <div className="demo-account-role">Dispatcher</div>
+                  <div className="demo-account-name">Jenish S.</div>
+                  <div className="demo-account-email">dispatcher@transitops.com</div>
+                </button>
+                <button className="demo-account-btn" onClick={() => handleDemoLogin('safety@transitops.com')}>
+                  <div className="demo-account-role">Safety Officer</div>
+                  <div className="demo-account-name">Jackson J.</div>
+                  <div className="demo-account-email">safety@transitops.com</div>
+                </button>
+                <button className="demo-account-btn" onClick={() => handleDemoLogin('analyst@transitops.com')}>
+                  <div className="demo-account-role">Financial Analyst</div>
+                  <div className="demo-account-name">Hari K.</div>
+                  <div className="demo-account-email">analyst@transitops.com</div>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Define tab navigation based on role permissions
+  const tabs = [
+    { name: 'Dashboard', icon: LayoutDashboard },
+    { name: 'Fleet', icon: Truck },
+    { name: 'Drivers', icon: Users },
+    { name: 'Trips', icon: Route },
+    { name: 'Maintenance', icon: Wrench },
+    { name: 'Fuel & Expenses', icon: Fuel },
+    { name: 'Reports & Analytics', icon: TrendingUp },
+    { name: 'Settings & RBAC', icon: Settings }
+  ];
+
+  const allowedTabs = getAllowedTabs(user.role);
+
+  // Check driver license expiration alerts (driver license expires in < 30 days)
+  const expiringDrivers = drivers.filter(d => {
+    const today = new Date();
+    const expiry = new Date(d.license_expiry_date);
+    const diffTime = expiry - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays >= 0 && diffDays <= 30;
+  });
+
+  return (
+    <div className="app-container">
+      {/* Global notifications banner */}
+      {globalMessage && (
+        <div style={{
+          position: 'fixed', top: '20px', right: '20px', zIndex: '9999',
+          animation: 'modalFadeIn 0.3s ease'
+        }} className={`alert-banner alert-banner-${globalMessage.type === 'success' ? 'success' : globalMessage.type === 'warning' ? 'warning' : 'danger'}`}>
+          <Check size={18} />
+          <span>{globalMessage.text}</span>
+        </div>
+      )}
+
+      {/* Sidebar Navigation */}
+      <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+        <div className="logo-container">
+          <div className="logo-icon">TO</div>
+          <div>
+            <div className="logo-text">TransitOps</div>
+            <div className="logo-subtitle">Smart Platform</div>
+          </div>
+        </div>
+        
+        <ul className="nav-links">
+          {tabs.map(tab => {
+            const isAllowed = allowedTabs.includes(tab.name);
+            if (!isAllowed) return null;
+            const Icon = tab.icon;
+            return (
+              <li key={tab.name}>
+                <div 
+                  className={`nav-item ${activeTab === tab.name ? 'active' : ''}`}
+                  onClick={() => {
+                    setActiveTab(tab.name);
+                    setSidebarOpen(false);
+                  }}
+                >
+                  <Icon size={18} />
+                  <span>{tab.name}</span>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+
+        <div className="sidebar-footer">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>v1.0.0 Stable</span>
+            <button onClick={() => setDarkMode(!darkMode)} className="btn btn-secondary" style={{ padding: '6px 8px', borderRadius: '50%' }}>
+              {darkMode ? <Sun size={14} /> : <Moon size={14} />}
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      {/* Main Content Layout */}
+      <main className="main-content">
+        <header className="header">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <button className="menu-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            </button>
+            <h1 className="header-title">{activeTab}</h1>
+          </div>
+          
+          <div className="user-profile">
+            <div className="user-info">
+              <div className="user-name">{user.name}</div>
+              <div className="user-role">{user.role}</div>
+            </div>
+            
+            <button className="btn-logout" onClick={handleLogout}>
+              <LogOut size={16} />
+              <span>Log Out</span>
+            </button>
+          </div>
+        </header>
+
+        <div className="content-body">
+          {/* Driver License Expiry warning alerts */}
+          {expiringDrivers.length > 0 && ['Fleet Manager', 'Safety Officer'].includes(user.role) && (
+            <div className="alert-banner alert-banner-warning">
+              <AlertTriangle size={18} />
+              <div>
+                <strong>License Renewal Warning:</strong> {expiringDrivers.length} driver(s) have licenses expiring in less than 30 days ({expiringDrivers.map(d => `${d.name} Exp: ${d.license_expiry_date}`).join(', ')}).
+              </div>
+            </div>
+          )}
+
+          {/* TAB CONTENTS */}
+
+          {activeTab === 'Dashboard' && (
+            <div>
+              {/* KPI section */}
+              {analytics ? (
+                <div className="kpi-grid">
+                  <div className="kpi-card">
+                    <div className="kpi-header">
+                      <span className="kpi-title">Active Vehicles</span>
+                      <div className="kpi-icon" style={{ backgroundColor: 'var(--warning-bg)', color: 'var(--warning)' }}>
+                        <Truck size={16} />
+                      </div>
+                    </div>
+                    <span className="kpi-value">{analytics.kpis.activeVehicles}</span>
+                  </div>
+                  <div className="kpi-card">
+                    <div className="kpi-header">
+                      <span className="kpi-title">Available Vehicles</span>
+                      <div className="kpi-icon" style={{ backgroundColor: 'var(--success-bg)', color: 'var(--success)' }}>
+                        <Check size={16} />
+                      </div>
+                    </div>
+                    <span className="kpi-value">{analytics.kpis.availableVehicles}</span>
+                  </div>
+                  <div className="kpi-card">
+                    <div className="kpi-header">
+                      <span className="kpi-title">In Shop (Maintenance)</span>
+                      <div className="kpi-icon" style={{ backgroundColor: 'var(--danger-bg)', color: 'var(--danger)' }}>
+                        <Wrench size={16} />
+                      </div>
+                    </div>
+                    <span className="kpi-value">{analytics.kpis.maintenanceVehicles}</span>
+                  </div>
+                  <div className="kpi-card">
+                    <div className="kpi-header">
+                      <span className="kpi-title">Active Trips</span>
+                      <div className="kpi-icon" style={{ backgroundColor: 'var(--info-bg)', color: 'var(--info)' }}>
+                        <Route size={16} />
+                      </div>
+                    </div>
+                    <span className="kpi-value">{analytics.kpis.activeTrips}</span>
+                  </div>
+                  <div className="kpi-card">
+                    <div className="kpi-header">
+                      <span className="kpi-title">Drivers On Duty</span>
+                      <div className="kpi-icon" style={{ backgroundColor: 'var(--success-bg)', color: 'var(--success)' }}>
+                        <Users size={16} />
+                      </div>
+                    </div>
+                    <span className="kpi-value">{analytics.kpis.driversOnDuty}</span>
+                  </div>
+                  <div className="kpi-card">
+                    <div className="kpi-header">
+                      <span className="kpi-title">Fleet Utilization</span>
+                      <div className="kpi-icon" style={{ backgroundColor: 'var(--primary-light)', color: 'var(--primary)' }}>
+                        <TrendingUp size={16} />
+                      </div>
+                    </div>
+                    <span className="kpi-value">{analytics.kpis.fleetUtilization}%</span>
+                  </div>
+                </div>
+              ) : (
+                /* Fallback basic stats */
+                <div className="kpi-grid">
+                  <div className="kpi-card">
+                    <span className="kpi-title">Active Dispatched Trips</span>
+                    <span className="kpi-value">{trips.filter(t => t.status === 'Dispatched').length}</span>
+                  </div>
+                  <div className="kpi-card">
+                    <span className="kpi-title">Pending Draft Trips</span>
+                    <span className="kpi-value">{trips.filter(t => t.status === 'Draft').length}</span>
+                  </div>
+                  <div className="kpi-card">
+                    <span className="kpi-title">Completed Trips</span>
+                    <span className="kpi-value">{trips.filter(t => t.status === 'Completed').length}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Recent Active Trips and Charts */}
+              <div className="charts-grid" style={{ gridTemplateColumns: '1fr' }}>
+                <div className="card">
+                  <div className="card-header">
+                    <h3 className="card-title">Live Dispatch Status Board</h3>
+                  </div>
+                  <div className="table-responsive">
+                    <table className="custom-table">
+                      <thead>
+                        <tr>
+                          <th>TRIP ID</th>
+                          <th>VEHICLE / MODEL</th>
+                          <th>ASSIGNED DRIVER</th>
+                          <th>ROUTE</th>
+                          <th>CARGO</th>
+                          <th>STATUS</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {trips.length > 0 ? (
+                          trips.slice(0, 5).map(trip => (
+                            <tr key={trip.id}>
+                              <td>TR-{String(trip.id).padStart(4, '0')}</td>
+                              <td>{trip.vehicle_reg_no} ({trip.vehicle_name})</td>
+                              <td>{trip.driver_name}</td>
+                              <td>{trip.source} → {trip.destination}</td>
+                              <td>{trip.cargo_weight} kg</td>
+                              <td>
+                                <span className={`badge ${
+                                  trip.status === 'Completed' ? 'badge-success' :
+                                  trip.status === 'Dispatched' ? 'badge-warning' :
+                                  trip.status === 'Cancelled' ? 'badge-danger' : 'badge-muted'
+                                }`}>
+                                  {trip.status}
+                                </span>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr><td colSpan="6" style={{ textAlign: 'center' }}>No dispatches logged yet.</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'Fleet' && (
+            <div className="card">
+              <div className="card-header">
+                <h3 className="card-title">Vehicle Registry</h3>
+                {hasWriteAccess(user.role, 'Fleet') && (
+                  <button className="btn btn-primary" onClick={() => { setSelectedVehicle(null); setVehicleModal(true); }}>
+                    <Plus size={16} />
+                    <span>Register Vehicle</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Filters bar */}
+              <div className="filter-bar">
+                <div className="search-input-wrapper">
+                  <Search size={16} className="search-icon-pos" />
+                  <input 
+                    type="text" 
+                    className="form-control" 
+                    placeholder="Search model or registration number..." 
+                    value={vehicleSearch} 
+                    onChange={e => setVehicleSearch(e.target.value)}
+                  />
+                </div>
+                
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <select className="form-control" style={{ width: '130px' }} value={vehicleTypeFilter} onChange={e => setVehicleTypeFilter(e.target.value)}>
+                    <option value="All">All Types</option>
+                    <option value="Van">Van</option>
+                    <option value="Truck">Truck</option>
+                    <option value="Mini">Mini-Truck</option>
+                    <option value="Sedan">Sedan</option>
+                  </select>
+
+                  <select className="form-control" style={{ width: '130px' }} value={vehicleStatusFilter} onChange={e => setVehicleStatusFilter(e.target.value)}>
+                    <option value="All">All Statuses</option>
+                    <option value="Available">Available</option>
+                    <option value="On Trip">On Trip</option>
+                    <option value="In Shop">In Shop</option>
+                    <option value="Retired">Retired</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Table */}
+              <div className="table-responsive">
+                <table className="custom-table">
+                  <thead>
+                    <tr>
+                      <th>REGISTRATION NO.</th>
+                      <th>MODEL / CLASS</th>
+                      <th>TYPE</th>
+                      <th>LOAD CAPACITY</th>
+                      <th>ODOMETER (KM)</th>
+                      <th>ACQUISITION COST</th>
+                      <th>STATUS</th>
+                      {hasWriteAccess(user.role, 'Fleet') && <th>ACTIONS</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {vehicles
+                      .filter(v => {
+                        const matchesSearch = v.registration_number.toLowerCase().includes(vehicleSearch.toLowerCase()) || v.name_model.toLowerCase().includes(vehicleSearch.toLowerCase());
+                        const matchesType = vehicleTypeFilter === 'All' || v.type === vehicleTypeFilter;
+                        const matchesStatus = vehicleStatusFilter === 'All' || v.status === vehicleStatusFilter;
+                        return matchesSearch && matchesType && matchesStatus;
+                      })
+                      .map(v => (
+                        <tr key={v.registration_number}>
+                          <td style={{ fontWeight: '600' }}>{v.registration_number}</td>
+                          <td>{v.name_model}</td>
+                          <td>{v.type}</td>
+                          <td>{v.max_load_capacity} kg</td>
+                          <td>{v.odometer.toLocaleString()} km</td>
+                          <td>₹{v.acquisition_cost.toLocaleString()}</td>
+                          <td>
+                            <span className={`badge ${
+                              v.status === 'Available' ? 'badge-success' :
+                              v.status === 'On Trip' ? 'badge-warning' :
+                              v.status === 'In Shop' ? 'badge-danger' : 'badge-muted'
+                            }`}>
+                              {v.status}
+                            </span>
+                          </td>
+                          {hasWriteAccess(user.role, 'Fleet') && (
+                            <td>
+                              <div style={{ display: 'flex', gap: '8px' }}>
+                                <button className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => { setSelectedVehicle(v); setVehicleModal(true); }}>
+                                  Edit
+                                </button>
+                                <button className="btn btn-danger" style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => handleVehicleDelete(v.registration_number)}>
+                                  Delete
+                                </button>
+                              </div>
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'Drivers' && (
+            <div className="card">
+              <div className="card-header">
+                <h3 className="card-title">Drivers & Compliance Profiles</h3>
+                {hasWriteAccess(user.role, 'Drivers') && (
+                  <button className="btn btn-primary" onClick={() => { setSelectedDriver(null); setDriverModal(true); }}>
+                    <Plus size={16} />
+                    <span>Register Driver</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Filters */}
+              <div className="filter-bar">
+                <div className="search-input-wrapper">
+                  <Search size={16} className="search-icon-pos" />
+                  <input 
+                    type="text" 
+                    className="form-control" 
+                    placeholder="Search drivers by name or license..." 
+                    value={driverSearch}
+                    onChange={e => setDriverSearch(e.target.value)}
+                  />
+                </div>
+
+                <select className="form-control" style={{ width: '150px' }} value={driverStatusFilter} onChange={e => setDriverStatusFilter(e.target.value)}>
+                  <option value="All">All Statuses</option>
+                  <option value="Available">Available</option>
+                  <option value="On Trip">On Trip</option>
+                  <option value="Off Duty">Off Duty</option>
+                  <option value="Suspended">Suspended</option>
+                </select>
+              </div>
+
+              {/* Table */}
+              <div className="table-responsive">
+                <table className="custom-table">
+                  <thead>
+                    <tr>
+                      <th>DRIVER NAME</th>
+                      <th>LICENSE NO.</th>
+                      <th>CATEGORY</th>
+                      <th>LICENSE EXPIRY</th>
+                      <th>CONTACT NO.</th>
+                      <th>SAFETY SCORE</th>
+                      <th>STATUS</th>
+                      {hasWriteAccess(user.role, 'Drivers') && <th>ACTIONS</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {drivers
+                      .filter(d => {
+                        const matchesSearch = d.name.toLowerCase().includes(driverSearch.toLowerCase()) || d.license_number.toLowerCase().includes(driverSearch.toLowerCase());
+                        const matchesStatus = driverStatusFilter === 'All' || d.status === driverStatusFilter;
+                        return matchesSearch && matchesStatus;
+                      })
+                      .map(d => {
+                        const today = new Date().toISOString().split('T')[0];
+                        const isExpired = d.license_expiry_date < today;
+                        
+                        return (
+                          <tr key={d.id}>
+                            <td style={{ fontWeight: '500' }}>{d.name}</td>
+                            <td>{d.license_number}</td>
+                            <td>{d.license_category}</td>
+                            <td style={{ color: isExpired ? 'var(--danger)' : 'inherit' }}>
+                              {d.license_expiry_date} {isExpired && ' (EXPIRED)'}
+                            </td>
+                            <td>{d.contact_number}</td>
+                            <td>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontWeight: '600' }}>{d.safety_score}%</span>
+                                <div style={{ width: '60px', height: '6px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+                                  <div style={{ 
+                                    width: `${d.safety_score}%`, 
+                                    height: '100%', 
+                                    backgroundColor: d.safety_score >= 90 ? 'var(--success)' : d.safety_score >= 75 ? 'var(--warning)' : 'var(--danger)' 
+                                  }}></div>
+                                </div>
+                              </div>
+                            </td>
+                            <td>
+                              <span className={`badge ${
+                                d.status === 'Available' ? 'badge-success' :
+                                d.status === 'On Trip' ? 'badge-warning' :
+                                d.status === 'Suspended' ? 'badge-danger' : 'badge-muted'
+                              }`}>
+                                {d.status}
+                              </span>
+                            </td>
+                            {hasWriteAccess(user.role, 'Drivers') && (
+                              <td>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                  <button className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => { setSelectedDriver(d); setDriverModal(true); }}>
+                                    Edit
+                                  </button>
+                                  <button className="btn btn-danger" style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => handleDriverDelete(d.id)}>
+                                    Delete
+                                  </button>
+                                </div>
+                              </td>
+                            )}
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'Trips' && (
+            <div className="card">
+              <div className="card-header">
+                <h3 className="card-title">Trip Management Panel</h3>
+                {hasWriteAccess(user.role, 'Trips') && (
+                  <button className="btn btn-primary" onClick={() => setTripModal(true)}>
+                    <Plus size={16} />
+                    <span>Create Cargo Dispatch</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Table */}
+              <div className="table-responsive">
+                <table className="custom-table">
+                  <thead>
+                    <tr>
+                      <th>TRIP ID</th>
+                      <th>VEHICLE REG</th>
+                      <th>DRIVER</th>
+                      <th>ROUTE</th>
+                      <th>DISTANCE</th>
+                      <th>WEIGHT LIMIT</th>
+                      <th>REVENUE</th>
+                      <th>STATUS</th>
+                      <th>ACTIONS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {trips.map(trip => (
+                      <tr key={trip.id}>
+                        <td style={{ fontWeight: '600' }}>TR-{String(trip.id).padStart(4, '0')}</td>
+                        <td>{trip.vehicle_reg_no}</td>
+                        <td>{trip.driver_name}</td>
+                        <td>{trip.source} → {trip.destination}</td>
+                        <td>{trip.planned_distance} km</td>
+                        <td>{trip.cargo_weight} kg</td>
+                        <td>₹{trip.revenue.toLocaleString()}</td>
+                        <td>
+                          <span className={`badge ${
+                            trip.status === 'Completed' ? 'badge-success' :
+                            trip.status === 'Dispatched' ? 'badge-warning' :
+                            trip.status === 'Cancelled' ? 'badge-danger' : 'badge-muted'
+                          }`}>
+                            {trip.status}
+                          </span>
+                        </td>
+                        <td>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            {trip.status === 'Draft' && hasWriteAccess(user.role, 'Trips') && (
+                              <>
+                                <button className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => handleTripDispatch(trip.id)}>
+                                  Dispatch
+                                </button>
+                                <button className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => handleTripCancel(trip.id)}>
+                                  Cancel
+                                </button>
+                              </>
+                            )}
+
+                            {trip.status === 'Dispatched' && hasWriteAccess(user.role, 'Trips') && (
+                              <>
+                                <button className="btn btn-success" style={{ padding: '6px 12px', fontSize: '12px', color: '#fff' }} onClick={() => setCompleteTripModal(trip)}>
+                                  Complete
+                                </button>
+                                <button className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => handleTripCancel(trip.id)}>
+                                  Cancel
+                                </button>
+                              </>
+                            )}
+                            
+                            {trip.status === 'Completed' && (
+                              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                                Consumed: {trip.actual_fuel_consumed}L, Odo: {trip.final_odometer}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'Maintenance' && (
+            <div className="card">
+              <div className="card-header">
+                <h3 className="card-title">Maintenance Record Log</h3>
+                {hasWriteAccess(user.role, 'Maintenance') && (
+                  <button className="btn btn-primary" onClick={() => setMaintModal(true)}>
+                    <Plus size={16} />
+                    <span>Log Service Record</span>
+                  </button>
+                )}
+              </div>
+
+              <div className="table-responsive">
+                <table className="custom-table">
+                  <thead>
+                    <tr>
+                      <th>LOG ID</th>
+                      <th>VEHICLE REG</th>
+                      <th>SERVICE TYPE</th>
+                      <th>COST</th>
+                      <th>DATE</th>
+                      <th>STATUS</th>
+                      <th>NOTES</th>
+                      {hasWriteAccess(user.role, 'Maintenance') && <th>ACTIONS</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {maintenanceLogs.map(log => (
+                      <tr key={log.id}>
+                        <td>#M-{String(log.id).padStart(4, '0')}</td>
+                        <td style={{ fontWeight: '500' }}>{log.vehicle_reg_no}</td>
+                        <td>{log.service_type}</td>
+                        <td>₹{log.cost.toLocaleString()}</td>
+                        <td>{log.date}</td>
+                        <td>
+                          <span className={`badge ${log.status === 'Completed' ? 'badge-success' : 'badge-danger'}`}>
+                            {log.status === 'Active' ? 'In Shop' : 'Completed'}
+                          </span>
+                        </td>
+                        <td>{log.notes}</td>
+                        {hasWriteAccess(user.role, 'Maintenance') && (
+                          <td>
+                            {log.status === 'Active' && (
+                              <button className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => handleMaintComplete(log.id)}>
+                                Mark Fixed
+                              </button>
+                            )}
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'Fuel & Expenses' && (
+            <div>
+              {/* Financial Analyst controls */}
+              {hasWriteAccess(user.role, 'Fuel & Expenses') && (
+                <div style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
+                  <button className="btn btn-primary" onClick={() => setFuelModal(true)}>
+                    <Plus size={16} />
+                    <span>Log Fuel Purchase</span>
+                  </button>
+                  <button className="btn btn-secondary" onClick={() => setExpenseModal(true)}>
+                    <Plus size={16} />
+                    <span>Record Toll / Expense</span>
+                  </button>
+                </div>
+              )}
+
+              <div className="charts-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
+                {/* Fuel Purchase logs */}
+                <div className="card">
+                  <h3 className="card-title" style={{ marginBottom: '16px' }}>Fuel Purchase Logs</h3>
+                  <div className="table-responsive" style={{ maxHeight: '400px' }}>
+                    <table className="custom-table">
+                      <thead>
+                        <tr>
+                          <th>VEHICLE REG</th>
+                          <th>LITERS</th>
+                          <th>TOTAL COST</th>
+                          <th>DATE</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {fuelLogs.map(log => (
+                          <tr key={log.id}>
+                            <td>{log.vehicle_reg_no}</td>
+                            <td>{log.liters} L</td>
+                            <td>₹{log.cost.toLocaleString()}</td>
+                            <td>{log.date}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Expenses logs */}
+                <div className="card">
+                  <h3 className="card-title" style={{ marginBottom: '16px' }}>All Operational Expenses</h3>
+                  <div className="table-responsive" style={{ maxHeight: '400px' }}>
+                    <table className="custom-table">
+                      <thead>
+                        <tr>
+                          <th>VEHICLE REG</th>
+                          <th>TYPE</th>
+                          <th>COST</th>
+                          <th>DATE</th>
+                          <th>DESCRIPTION</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {expenses.map(exp => (
+                          <tr key={exp.id}>
+                            <td>{exp.vehicle_reg_no}</td>
+                            <td>
+                              <span className={`badge ${
+                                exp.type === 'Fuel' ? 'badge-info' :
+                                exp.type === 'Maintenance' ? 'badge-danger' :
+                                exp.type === 'Toll' ? 'badge-success' : 'badge-muted'
+                              }`}>
+                                {exp.type}
+                              </span>
+                            </td>
+                            <td>₹{exp.cost.toLocaleString()}</td>
+                            <td>{exp.date}</td>
+                            <td>{exp.description}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'Reports & Analytics' && (
+            <div>
+              {/* Export control */}
+              <div className="card" style={{ padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h3 style={{ fontSize: '16px', fontWeight: '600' }}>Operational Excel/CSV Report</h3>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '2px' }}>Download the complete vehicle lifecycle and ROI data sheet</p>
+                </div>
+                <button className="btn btn-primary" onClick={handleCSVExport}>
+                  <FileSpreadsheet size={16} />
+                  <span>Export Fleet CSV</span>
+                </button>
+              </div>
+
+              {/* Dynamic Recharts Charts */}
+              {analytics && (
+                <>
+                  <div className="charts-grid">
+                    {/* Monthly Cost vs Revenue */}
+                    <div className="card" style={{ height: 'auto' }}>
+                      <h3 className="card-title" style={{ marginBottom: '20px' }}>Monthly Revenue vs Total Costs</h3>
+                      <div style={{ width: '100%', height: '300px' }}>
+                        <ResponsiveContainer>
+                          <BarChart data={analytics.monthlyChartData}>
+                            <XAxis dataKey="month" stroke="var(--text-secondary)" />
+                            <YAxis stroke="var(--text-secondary)" />
+                            <Tooltip contentStyle={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)', color: '#fff' }} />
+                            <Legend />
+                            <Bar dataKey="revenue" fill="var(--success)" name="Revenue (₹)" />
+                            <Bar dataKey="cost" fill="var(--danger)" name="Expenses (₹)" />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+
+                    {/* Costliest vehicles bar chart */}
+                    <div className="card" style={{ height: 'auto' }}>
+                      <h3 className="card-title" style={{ marginBottom: '20px' }}>Top Costliest Vehicles (₹)</h3>
+                      <div style={{ width: '100%', height: '300px' }}>
+                        <ResponsiveContainer>
+                          <BarChart data={analytics.vehicles.slice(0, 5).sort((a,b)=> b.operational_cost - a.operational_cost)} layout="vertical">
+                            <XAxis type="number" stroke="var(--text-secondary)" />
+                            <YAxis type="category" dataKey="name_model" stroke="var(--text-secondary)" width={100} />
+                            <Tooltip contentStyle={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }} />
+                            <Bar dataKey="operational_cost" fill="var(--warning)" name="Operating Cost (₹)">
+                              {analytics.vehicles.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={index === 0 ? 'var(--danger)' : index === 1 ? 'var(--warning)' : 'var(--info)'} />
+                              ))}
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Vehicle Reports Summary Grid */}
+                  <div className="card">
+                    <h3 className="card-title" style={{ marginBottom: '20px' }}>Vehicle ROI & Fuel Metrics</h3>
+                    <div className="table-responsive">
+                      <table className="custom-table">
+                        <thead>
+                          <tr>
+                            <th>VEHICLE REG</th>
+                            <th>MODEL NAME</th>
+                            <th>FUEL EFFICIENCY (KM/L)</th>
+                            <th>OPERATIONAL COST</th>
+                            <th>ACQUISITION COST</th>
+                            <th>REVENUE GENERATED</th>
+                            <th>VEHICLE ROI</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {analytics.vehicles.map(v => (
+                            <tr key={v.registration_number}>
+                              <td style={{ fontWeight: '600' }}>{v.registration_number}</td>
+                              <td>{v.name_model}</td>
+                              <td>{v.fuel_efficiency > 0 ? `${v.fuel_efficiency} km/l` : 'N/A'}</td>
+                              <td>₹{v.operational_cost.toLocaleString()}</td>
+                              <td>₹{v.acquisition_cost.toLocaleString()}</td>
+                              <td>₹{v.total_revenue.toLocaleString()}</td>
+                              <td style={{ fontWeight: '700', color: v.roi >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+                                {v.roi}%
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'Settings & RBAC' && (
+            <div className="card">
+              <h3 className="card-title" style={{ marginBottom: '16px' }}>Role-Based Access Controls (RBAC) Settings</h3>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '24px' }}>
+                TransitOps applies strict scoping of read/write resource permissions based on user role assignments. You can simulate switching your current role below to instantly see UI and API access updates.
+              </p>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '40px', backgroundColor: 'var(--primary-light)', padding: '20px', borderRadius: '8px', border: '1px dashed var(--primary)' }}>
+                <span style={{ fontWeight: '600', color: 'var(--primary)', fontSize: '14px' }}>SIMULATE ACTIVE EVALUATOR ROLE:</span>
+                <select className="form-control" style={{ width: '220px' }} value={user.role} onChange={e => handleSimulatedRoleChange(e.target.value)}>
+                  <option value="Fleet Manager">Fleet Manager</option>
+                  <option value="Dispatcher">Dispatcher</option>
+                  <option value="Safety Officer">Safety Officer</option>
+                  <option value="Financial Analyst">Financial Analyst</option>
+                </select>
+              </div>
+
+              <h4 style={{ fontSize: '15px', fontWeight: '600', marginBottom: '16px' }}>Active RBAC Permissions Matrix</h4>
+              <div className="table-responsive">
+                <table className="custom-table" style={{ border: '1px solid var(--border-color)' }}>
+                  <thead>
+                    <tr>
+                      <th>ROLE</th>
+                      <th>FLEET REGISTRY</th>
+                      <th>DRIVERS DIRECTORY</th>
+                      <th>TRIPS / DISPATCHING</th>
+                      <th>MAINTENANCE LOGS</th>
+                      <th>FUEL & EXPENSES</th>
+                      <th>ANALYTICS & REPORTS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td style={{ fontWeight: '600' }}>Fleet Manager</td>
+                      <td><span className="badge badge-success">Read / Write</span></td>
+                      <td><span className="badge badge-success">Read / Write</span></td>
+                      <td><span className="badge badge-muted">View Only</span></td>
+                      <td><span className="badge badge-success">Read / Write</span></td>
+                      <td><span className="badge badge-muted">View Only</span></td>
+                      <td><span className="badge badge-success">Full Access</span></td>
+                    </tr>
+                    <tr>
+                      <td style={{ fontWeight: '600' }}>Dispatcher</td>
+                      <td><span className="badge badge-muted">View Only</span></td>
+                      <td><span className="badge badge-danger">No Access</span></td>
+                      <td><span className="badge badge-success">Read / Write</span></td>
+                      <td><span className="badge badge-danger">No Access</span></td>
+                      <td><span className="badge badge-danger">No Access</span></td>
+                      <td><span className="badge badge-danger">No Access</span></td>
+                    </tr>
+                    <tr>
+                      <td style={{ fontWeight: '600' }}>Safety Officer</td>
+                      <td><span className="badge badge-danger">No Access</span></td>
+                      <td><span className="badge badge-success">Read / Write</span></td>
+                      <td><span className="badge badge-muted">View Only</span></td>
+                      <td><span className="badge badge-danger">No Access</span></td>
+                      <td><span className="badge badge-danger">No Access</span></td>
+                      <td><span className="badge badge-danger">No Access</span></td>
+                    </tr>
+                    <tr>
+                      <td style={{ fontWeight: '600' }}>Financial Analyst</td>
+                      <td><span className="badge badge-muted">View Only</span></td>
+                      <td><span className="badge badge-danger">No Access</span></td>
+                      <td><span className="badge badge-danger">No Access</span></td>
+                      <td><span className="badge badge-danger">No Access</span></td>
+                      <td><span className="badge badge-success">Read / Write</span></td>
+                      <td><span className="badge badge-success">Full Access</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* ALL MODAL FORMS */}
+
+          {/* 1. Vehicle Form Modal */}
+          {vehicleModal && (
+            <div className="modal-overlay">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h3 className="modal-title">{selectedVehicle ? 'Update Vehicle' : 'Register New Vehicle'}</h3>
+                  <button className="modal-close" onClick={() => setVehicleModal(false)}><X size={20} /></button>
+                </div>
+                <form onSubmit={handleVehicleSubmit}>
+                  <div className="form-group">
+                    <label>VEHICLE REGISTRATION NUMBER (UNIQUE)</label>
+                    <input 
+                      type="text" 
+                      name="registration_number" 
+                      className="form-control" 
+                      defaultValue={selectedVehicle?.registration_number} 
+                      disabled={!!selectedVehicle} 
+                      placeholder="e.g. GJ01AB1234"
+                      required 
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>VEHICLE MODEL / BRAND</label>
+                    <input 
+                      type="text" 
+                      name="name_model" 
+                      className="form-control" 
+                      defaultValue={selectedVehicle?.name_model} 
+                      placeholder="e.g. Tata Ace Gold"
+                      required 
+                    />
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>VEHICLE TYPE</label>
+                      <select name="type" className="form-control" defaultValue={selectedVehicle?.type || 'Van'}>
+                        <option value="Van">Van</option>
+                        <option value="Truck">Truck</option>
+                        <option value="Mini">Mini-Truck</option>
+                        <option value="Sedan">Sedan</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>MAX CARGO CAPACITY (KG)</label>
+                      <input 
+                        type="number" 
+                        name="max_load_capacity" 
+                        className="form-control" 
+                        defaultValue={selectedVehicle?.max_load_capacity} 
+                        placeholder="e.g. 750"
+                        min="1"
+                        required 
+                      />
+                    </div>
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>ODOMETER READING (KM)</label>
+                      <input 
+                        type="number" 
+                        name="odometer" 
+                        className="form-control" 
+                        defaultValue={selectedVehicle?.odometer || 0} 
+                        min="0"
+                        required 
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>ACQUISITION COST (₹)</label>
+                      <input 
+                        type="number" 
+                        name="acquisition_cost" 
+                        className="form-control" 
+                        defaultValue={selectedVehicle?.acquisition_cost} 
+                        min="1"
+                        required 
+                      />
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <label>VEHICLE STATUS</label>
+                    <select name="status" className="form-control" defaultValue={selectedVehicle?.status || 'Available'}>
+                      <option value="Available">Available</option>
+                      <option value="On Trip" disabled>On Trip (Trip Dispatch Only)</option>
+                      <option value="In Shop">In Shop (Maintenance)</option>
+                      <option value="Retired">Retired</option>
+                    </select>
+                  </div>
+                  <div className="modal-footer">
+                    <button type="button" className="btn btn-secondary" onClick={() => setVehicleModal(false)}>Cancel</button>
+                    <button type="submit" className="btn btn-primary">Save Vehicle</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* 2. Driver Form Modal */}
+          {driverModal && (
+            <div className="modal-overlay">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h3 className="modal-title">{selectedDriver ? 'Update Driver Profile' : 'Register Driver Profile'}</h3>
+                  <button className="modal-close" onClick={() => setDriverModal(false)}><X size={20} /></button>
+                </div>
+                <form onSubmit={handleDriverSubmit}>
+                  <div className="form-group">
+                    <label>FULL NAME</label>
+                    <input 
+                      type="text" 
+                      name="name" 
+                      className="form-control" 
+                      defaultValue={selectedDriver?.name} 
+                      placeholder="Driver Name"
+                      required 
+                    />
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>LICENSE NUMBER</label>
+                      <input 
+                        type="text" 
+                        name="license_number" 
+                        className="form-control" 
+                        defaultValue={selectedDriver?.license_number} 
+                        placeholder="e.g. DL-12345"
+                        required 
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>LICENSE CATEGORY</label>
+                      <select name="license_category" className="form-control" defaultValue={selectedDriver?.license_category || 'LMV'}>
+                        <option value="LMV">LMV (Light Motor Vehicle)</option>
+                        <option value="HMV">HMV (Heavy Motor Vehicle)</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>LICENSE EXPIRY DATE</label>
+                      <input 
+                        type="date" 
+                        name="license_expiry_date" 
+                        className="form-control" 
+                        defaultValue={selectedDriver?.license_expiry_date} 
+                        required 
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>CONTACT NUMBER</label>
+                      <input 
+                        type="tel" 
+                        name="contact_number" 
+                        className="form-control" 
+                        defaultValue={selectedDriver?.contact_number} 
+                        placeholder="10-digit number"
+                        required 
+                      />
+                    </div>
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>COMPLIANCE/SAFETY SCORE (0-100)</label>
+                      <input 
+                        type="number" 
+                        name="safety_score" 
+                        className="form-control" 
+                        defaultValue={selectedDriver?.safety_score || 100} 
+                        min="0"
+                        max="100"
+                        required 
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>STATUS</label>
+                      <select name="status" className="form-control" defaultValue={selectedDriver?.status || 'Available'}>
+                        <option value="Available">Available</option>
+                        <option value="On Trip" disabled>On Trip</option>
+                        <option value="Off Duty">Off Duty</option>
+                        <option value="Suspended">Suspended</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="modal-footer">
+                    <button type="button" className="btn btn-secondary" onClick={() => setDriverModal(false)}>Cancel</button>
+                    <button type="submit" className="btn btn-primary">Save Driver</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* 3. Trip Planner Modal */}
+          {tripModal && (
+            <div className="modal-overlay">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h3 className="modal-title">Plan Cargo Trip</h3>
+                  <button className="modal-close" onClick={() => setTripModal(false)}><X size={20} /></button>
+                </div>
+                <form onSubmit={handleTripCreate}>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>SOURCE DEPOT</label>
+                      <input type="text" name="source" className="form-control" placeholder="Depot A" required />
+                    </div>
+                    <div className="form-group">
+                      <label>DESTINATION HUB</label>
+                      <input type="text" name="destination" className="form-control" placeholder="Depot B" required />
+                    </div>
+                  </div>
+                  
+                  <div className="form-group">
+                    <label>SELECT AVAILABLE VEHICLE</label>
+                    <select name="vehicle_reg_no" className="form-control" required>
+                      <option value="">-- Choose Vehicle --</option>
+                      {vehicles.filter(v => v.status === 'Available').map(v => (
+                        <option key={v.registration_number} value={v.registration_number}>
+                          {v.registration_number} - {v.name_model} (Cap: {v.max_load_capacity}kg)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label>SELECT AVAILABLE DRIVER</label>
+                    <select name="driver_id" className="form-control" required>
+                      <option value="">-- Choose Driver --</option>
+                      {drivers
+                        .filter(d => {
+                          const today = new Date().toISOString().split('T')[0];
+                          return d.status === 'Available' && d.license_expiry_date >= today;
+                        })
+                        .map(d => (
+                          <option key={d.id} value={d.id}>
+                            {d.name} (Score: {d.safety_score}%, Class: {d.license_category})
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>CARGO WEIGHT (KG)</label>
+                      <input type="number" name="cargo_weight" className="form-control" min="1" placeholder="Weight in kg" required />
+                    </div>
+                    <div className="form-group">
+                      <label>PLANNED ROUTE DISTANCE (KM)</label>
+                      <input type="number" name="planned_distance" className="form-control" min="1" placeholder="Distance" required />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label>PROJECTED REVENUE (₹)</label>
+                    <input type="number" name="revenue" className="form-control" min="0" placeholder="Revenue" required />
+                  </div>
+
+                  <div className="modal-footer">
+                    <button type="button" className="btn btn-secondary" onClick={() => setTripModal(false)}>Cancel</button>
+                    <button type="submit" className="btn btn-primary">Create Draft Trip</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* 4. Complete Trip Modal */}
+          {completeTripModal && (
+            <div className="modal-overlay">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h3 className="modal-title">Complete Trip TR-{String(completeTripModal.id).padStart(4, '0')}</h3>
+                  <button className="modal-close" onClick={() => setCompleteTripModal(null)}><X size={20} /></button>
+                </div>
+                <form onSubmit={handleTripComplete}>
+                  <div className="form-group">
+                    <label>VEHICLE ON TRIP</label>
+                    <input type="text" className="form-control" value={completeTripModal.vehicle_reg_no} disabled />
+                  </div>
+
+                  <div className="form-group">
+                    <label>FINAL ODOMETER READING (KM)</label>
+                    <input 
+                      type="number" 
+                      name="final_odometer" 
+                      className="form-control" 
+                      placeholder="Must be greater than current vehicle odometer" 
+                      min="0"
+                      required 
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>ACTUAL FUEL CONSUMED (LITERS)</label>
+                    <input 
+                      type="number" 
+                      name="actual_fuel_consumed" 
+                      className="form-control" 
+                      placeholder="Liters of fuel" 
+                      step="0.01" 
+                      min="0.1" 
+                      required 
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>TOTAL FUEL COST (₹) (OPTIONAL)</label>
+                    <input 
+                      type="number" 
+                      name="fuel_cost" 
+                      className="form-control" 
+                      placeholder="Defaults to liters * ₹95" 
+                      min="0"
+                    />
+                  </div>
+
+                  <div className="modal-footer">
+                    <button type="button" className="btn btn-secondary" onClick={() => setCompleteTripModal(null)}>Cancel</button>
+                    <button type="submit" className="btn btn-primary">Complete Trip</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* 5. Maintenance Form Modal */}
+          {maintModal && (
+            <div className="modal-overlay">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h3 className="modal-title">Log Service Record</h3>
+                  <button className="modal-close" onClick={() => setMaintModal(false)}><X size={20} /></button>
+                </div>
+                <form onSubmit={handleMaintSubmit}>
+                  <div className="form-group">
+                    <label>SELECT VEHICLE</label>
+                    <select name="vehicle_reg_no" className="form-control" required>
+                      <option value="">-- Choose Vehicle --</option>
+                      {vehicles.filter(v => v.status !== 'Retired').map(v => (
+                        <option key={v.registration_number} value={v.registration_number}>
+                          {v.registration_number} - {v.name_model} ({v.status})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label>SERVICE TYPE / WORK DETAILS</label>
+                    <input type="text" name="service_type" className="form-control" placeholder="e.g. Oil Change, Brake Repair" required />
+                  </div>
+
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>SERVICE COST (₹)</label>
+                      <input type="number" name="cost" className="form-control" min="0" required />
+                    </div>
+                    <div className="form-group">
+                      <label>SERVICE DATE</label>
+                      <input type="date" name="date" className="form-control" defaultValue={new Date().toISOString().split('T')[0]} required />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label>ADDITIONAL MAINTENANCE NOTES</label>
+                    <textarea name="notes" className="form-control" rows="3" placeholder="Explain details of the mechanical issues..."></textarea>
+                  </div>
+
+                  <div className="modal-footer">
+                    <button type="button" className="btn btn-secondary" onClick={() => setMaintModal(false)}>Cancel</button>
+                    <button type="submit" className="btn btn-primary">Log Service Record</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* 6. Fuel Log Form Modal */}
+          {fuelModal && (
+            <div className="modal-overlay">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h3 className="modal-title">Record Fuel Purchase</h3>
+                  <button className="modal-close" onClick={() => setFuelModal(false)}><X size={20} /></button>
+                </div>
+                <form onSubmit={handleFuelSubmit}>
+                  <div className="form-group">
+                    <label>VEHICLE REGISTRATION</label>
+                    <select name="vehicle_reg_no" className="form-control" required>
+                      <option value="">-- Choose Vehicle --</option>
+                      {vehicles.map(v => (
+                        <option key={v.registration_number} value={v.registration_number}>
+                          {v.registration_number} - {v.name_model}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>LITERS FILLED</label>
+                      <input type="number" name="liters" className="form-control" min="0.1" step="0.01" required />
+                    </div>
+                    <div className="form-group">
+                      <label>TOTAL COST (₹)</label>
+                      <input type="number" name="cost" className="form-control" min="1" required />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label>PURCHASE DATE</label>
+                    <input type="date" name="date" className="form-control" defaultValue={new Date().toISOString().split('T')[0]} required />
+                  </div>
+
+                  <div className="modal-footer">
+                    <button type="button" className="btn btn-secondary" onClick={() => setFuelModal(false)}>Cancel</button>
+                    <button type="submit" className="btn btn-primary">Save Fuel Log</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* 7. Expense Form Modal */}
+          {expenseModal && (
+            <div className="modal-overlay">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h3 className="modal-title">Log Operational Expense</h3>
+                  <button className="modal-close" onClick={() => setExpenseModal(false)}><X size={20} /></button>
+                </div>
+                <form onSubmit={handleExpenseSubmit}>
+                  <div className="form-group">
+                    <label>VEHICLE REGISTRATION</label>
+                    <select name="vehicle_reg_no" className="form-control" required>
+                      <option value="">-- Choose Vehicle --</option>
+                      {vehicles.map(v => (
+                        <option key={v.registration_number} value={v.registration_number}>
+                          {v.registration_number} - {v.name_model}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>EXPENSE TYPE</label>
+                      <select name="type" className="form-control" required>
+                        <option value="Toll">Toll Charges</option>
+                        <option value="Other">Other Miscellaneous</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>COST (₹)</label>
+                      <input type="number" name="cost" className="form-control" min="1" required />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label>ASSOCIATED TRIP ID (OPTIONAL)</label>
+                    <select name="trip_id" className="form-control">
+                      <option value="">-- None --</option>
+                      {trips.map(t => (
+                        <option key={t.id} value={t.id}>
+                          TR-{String(t.id).padStart(4, '0')} ({t.source} → {t.destination})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label>EXPENSE DATE</label>
+                    <input type="date" name="date" className="form-control" defaultValue={new Date().toISOString().split('T')[0]} required />
+                  </div>
+
+                  <div className="form-group">
+                    <label>DESCRIPTION</label>
+                    <input type="text" name="description" className="form-control" placeholder="e.g. NH8 toll booth cash paid" required />
+                  </div>
+
+                  <div className="modal-footer">
+                    <button type="button" className="btn btn-secondary" onClick={() => setExpenseModal(false)}>Cancel</button>
+                    <button type="submit" className="btn btn-primary">Save Expense</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+        </div>
+      </main>
+    </div>
+  );
+}

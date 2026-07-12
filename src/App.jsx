@@ -1468,8 +1468,19 @@ export default function App() {
             <div style={{ position: 'relative' }}>
               <button 
                 onClick={() => setNotifPanelOpen(!notifPanelOpen)} 
-                className="btn btn-secondary" 
-                style={{ padding: '8px', borderRadius: '50%', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                className={`btn btn-secondary ${notificationAlerts.length > 0 ? 'pulse-red-glow' : ''}`} 
+                style={{ 
+                  padding: '8px', 
+                  borderRadius: '50%', 
+                  position: 'relative', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  borderColor: notificationAlerts.length > 0 ? 'var(--danger)' : 'var(--border-color)',
+                  color: notificationAlerts.length > 0 ? 'var(--danger)' : 'var(--text-primary)',
+                  transition: 'all 0.3s ease'
+                }}
+                title="System Compliance Alerts"
               >
                 <Bell size={16} />
                 {notificationAlerts.length > 0 && (
@@ -1479,14 +1490,15 @@ export default function App() {
                     right: '-4px', 
                     backgroundColor: 'var(--danger)', 
                     color: '#fff', 
-                    fontSize: '10px', 
-                    fontWeight: '700', 
+                    fontSize: '9px', 
+                    fontWeight: '800', 
                     borderRadius: '50%', 
-                    width: '16px', 
-                    height: '16px', 
+                    width: '15px', 
+                    height: '15px', 
                     display: 'flex', 
                     alignItems: 'center', 
-                    justifyContent: 'center' 
+                    justifyContent: 'center',
+                    boxShadow: '0 0 8px rgba(239, 68, 68, 0.6)'
                   }}>
                     {notificationAlerts.length}
                   </span>
@@ -1495,34 +1507,78 @@ export default function App() {
 
               {/* Dropdown Alerts Panel */}
               {notifPanelOpen && (
-                <div className="notifications-dropdown">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
-                    <span style={{ fontWeight: '600', fontSize: '13px', color: 'var(--text-primary)' }}>System Compliance Alerts</span>
-                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{notificationAlerts.length} Active</span>
+                <div className="notifications-dropdown" style={{ width: '340px', padding: '16px', maxHeight: '420px', overflowY: 'auto' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <ShieldAlert size={14} style={{ color: notificationAlerts.length > 0 ? 'var(--danger)' : 'var(--success)' }} />
+                      <span style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-primary)', fontFamily: 'var(--font-display)', letterSpacing: '0.3px' }}>System Compliance Alerts</span>
+                    </div>
+                    <span className="badge" style={{ backgroundColor: notificationAlerts.length > 0 ? 'var(--danger-bg)' : 'var(--success-bg)', color: notificationAlerts.length > 0 ? 'var(--danger)' : 'var(--success)', fontSize: '10px', padding: '2px 8px', borderRadius: '10px', fontWeight: '700' }}>
+                      {notificationAlerts.length} Active
+                    </span>
                   </div>
+                  
                   {notificationAlerts.length === 0 ? (
-                    <div style={{ padding: '16px 0', color: 'var(--text-secondary)', fontSize: '12px', textAlign: 'center' }}>
-                      All systems operating normally.
+                    <div style={{ padding: '24px 0', color: 'var(--text-secondary)', fontSize: '12px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                      <Check size={24} style={{ color: 'var(--success)' }} />
+                      <span>All operating systems compliant. No active alerts.</span>
                     </div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      {notificationAlerts.map(alert => (
-                        <div 
-                          key={alert.id} 
-                          style={{ 
-                            padding: '10px', 
-                            borderRadius: '6px', 
-                            borderLeft: `4px solid ${alert.type === 'danger' ? 'var(--danger)' : alert.type === 'warning' ? 'var(--warning)' : 'var(--info)'}`,
-                            backgroundColor: 'rgba(255,255,255,0.02)',
-                            fontSize: '12px'
-                          }}
-                        >
-                          <div style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '2px' }}>{alert.title}</div>
-                          <div style={{ color: 'var(--text-secondary)', lineHeight: '1.4' }}>{alert.message}</div>
-                        </div>
-                      ))}
+                      {notificationAlerts.map(alert => {
+                        const isDanger = alert.type === 'danger';
+                        const isWarning = alert.type === 'warning';
+                        
+                        let itemBg = 'rgba(59, 130, 246, 0.04)';
+                        let itemBorder = 'var(--info)';
+                        if (isDanger) {
+                          itemBg = 'rgba(239, 68, 68, 0.04)';
+                          itemBorder = 'var(--danger)';
+                        } else if (isWarning) {
+                          itemBg = 'rgba(245, 158, 11, 0.04)';
+                          itemBorder = 'var(--warning)';
+                        }
+
+                        return (
+                          <div 
+                            key={alert.id} 
+                            style={{ 
+                              padding: '12px', 
+                              borderRadius: '8px', 
+                              borderLeft: `4px solid ${itemBorder}`,
+                              backgroundColor: itemBg,
+                              borderTop: '1px solid rgba(255,255,255,0.01)',
+                              borderRight: '1px solid rgba(255,255,255,0.01)',
+                              borderBottom: '1px solid rgba(255,255,255,0.01)',
+                              display: 'flex',
+                              gap: '10px',
+                              alignItems: 'flex-start',
+                              transition: 'transform 0.15s ease'
+                            }}
+                          >
+                            <div style={{ marginTop: '2px' }}>
+                              {isDanger ? (
+                                <AlertTriangle size={14} style={{ color: 'var(--danger)' }} />
+                              ) : isWarning ? (
+                                <ShieldAlert size={14} style={{ color: 'var(--warning)' }} />
+                              ) : (
+                                <Activity size={14} style={{ color: 'var(--info)' }} />
+                              )}
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontWeight: '600', color: 'var(--text-primary)', fontSize: '11.5px', marginBottom: '2px' }}>{alert.title}</div>
+                              <div style={{ color: 'var(--text-secondary)', fontSize: '11px', lineHeight: '1.4' }}>{alert.message}</div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '9px', color: notificationAlerts.length > 0 ? 'var(--warning)' : 'var(--success)', borderTop: '1px solid var(--border-color)', paddingTop: '10px', marginTop: '14px', justifyContent: 'center', letterSpacing: '0.5px', fontWeight: '700' }}>
+                    <Activity size={10} className="pulse-dot" style={{ backgroundColor: 'transparent', display: 'inline-block' }} />
+                    <span>COMPLIANCE MONITOR ACTIVE</span>
+                  </div>
                 </div>
               )}
             </div>

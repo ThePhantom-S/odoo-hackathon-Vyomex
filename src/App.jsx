@@ -286,8 +286,8 @@ function ThreeLogisticsGlobe() {
     if (!containerRef.current) return;
 
     const container = containerRef.current;
-    const width = window.innerWidth;
-    const height = window.innerHeight;
+    const width = container.clientWidth || window.innerWidth;
+    const height = container.clientHeight || window.innerHeight;
 
     // Create Scene, Camera, Renderer
     const scene = new THREE.Scene();
@@ -304,25 +304,15 @@ function ThreeLogisticsGlobe() {
     scene.add(globeGroup);
 
     // 1. Create a wireframe sphere representing the globe grid
-    const sphereGeom = new THREE.SphereGeometry(90, 28, 28);
+    const sphereGeom = new THREE.SphereGeometry(90, 24, 24);
     const sphereMat = new THREE.MeshBasicMaterial({
       color: 0xf59e0b,
       wireframe: true,
       transparent: true,
-      opacity: 0.18
+      opacity: 0.08
     });
     const globeGrid = new THREE.Mesh(sphereGeom, sphereMat);
     globeGroup.add(globeGrid);
-
-    // Inner glow sphere
-    const innerGeom = new THREE.SphereGeometry(88, 16, 16);
-    const innerMat = new THREE.MeshBasicMaterial({
-      color: 0xf59e0b,
-      transparent: true,
-      opacity: 0.03,
-      side: THREE.BackSide
-    });
-    globeGroup.add(new THREE.Mesh(innerGeom, innerMat));
 
     // 2. Create nodes (warehouse points)
     const pointsCount = 35;
@@ -352,9 +342,9 @@ function ThreeLogisticsGlobe() {
     pointsGeom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     const pointsMat = new THREE.PointsMaterial({
       color: 0xf59e0b,
-      size: 5,
+      size: 4,
       transparent: true,
-      opacity: 0.9
+      opacity: 0.7
     });
     const points = new THREE.Points(pointsGeom, pointsMat);
     globeGroup.add(points);
@@ -388,7 +378,7 @@ function ThreeLogisticsGlobe() {
       const mat = new THREE.LineBasicMaterial({
         color: isBlue ? 0x3b82f6 : 0xf59e0b,
         transparent: true,
-        opacity: isBlue ? 0.4 : 0.5
+        opacity: 0.25
       });
       const line = new THREE.Line(curveGeom, mat);
       linesGroup.add(line);
@@ -422,18 +412,19 @@ function ThreeLogisticsGlobe() {
 
     particleGeom.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
     const particleMat = new THREE.PointsMaterial({
-      color: 0x60a5fa,
-      size: 2.5,
+      color: 0x3b82f6,
+      size: 2,
       transparent: true,
-      opacity: 0.55
+      opacity: 0.4
     });
     const spaceParticles = new THREE.Points(particleGeom, particleMat);
     scene.add(spaceParticles);
 
     // Resize Handler
     const handleResize = () => {
-      const w = window.innerWidth;
-      const h = window.innerHeight;
+      if (!containerRef.current) return;
+      const w = container.clientWidth || window.innerWidth;
+      const h = container.clientHeight || window.innerHeight;
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
@@ -488,7 +479,7 @@ function ThreeLogisticsGlobe() {
         height: '100%', 
         zIndex: 0, 
         pointerEvents: 'none',
-        opacity: 1
+        opacity: 0.75
       }} 
     />
   );
@@ -1116,7 +1107,7 @@ export default function App() {
   if (!token || !user) {
     return (
       <div className="login-screen">
-        <ThreeLogisticsGlobe wireframeOpacity={0.18} nodeSize={5} nodeOpacity={0.9} curveOpacity={0.45} />
+        <ThreeLogisticsGlobe />
         <div className="login-bg-glow-1"></div>
         <div className="login-bg-glow-2"></div>
         <div className="login-left">          <div className="login-screen-left-inner">

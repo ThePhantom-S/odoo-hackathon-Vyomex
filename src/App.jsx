@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { 
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, 
-  Tooltip, Legend, LineChart, Line, Cell 
+  Tooltip, Legend, LineChart, Line, Cell, CartesianGrid, PieChart, Pie
 } from 'recharts';
 
 const API_BASE = '/api';
@@ -859,8 +859,8 @@ export default function App() {
               )}
 
               {/* Recent Active Trips and Charts */}
-              <div className="charts-grid" style={{ gridTemplateColumns: '1fr' }}>
-                <div className="card">
+              <div className="charts-grid">
+                <div className="card" style={{ marginBottom: 0 }}>
                   <div className="card-header">
                     <h3 className="card-title">Live Dispatch Status Board</h3>
                   </div>
@@ -872,7 +872,6 @@ export default function App() {
                           <th>VEHICLE / MODEL</th>
                           <th>ASSIGNED DRIVER</th>
                           <th>ROUTE</th>
-                          <th>CARGO</th>
                           <th>STATUS</th>
                         </tr>
                       </thead>
@@ -884,7 +883,6 @@ export default function App() {
                               <td>{trip.vehicle_reg_no} ({trip.vehicle_name})</td>
                               <td>{trip.driver_name}</td>
                               <td>{trip.source} → {trip.destination}</td>
-                              <td>{trip.cargo_weight} kg</td>
                               <td>
                                 <span className={`badge ${
                                   trip.status === 'Completed' ? 'badge-success' :
@@ -897,10 +895,131 @@ export default function App() {
                             </tr>
                           ))
                         ) : (
-                          <tr><td colSpan="6" style={{ textAlign: 'center' }}>No dispatches logged yet.</td></tr>
+                          <tr><td colSpan="5" style={{ textAlign: 'center' }}>No dispatches logged yet.</td></tr>
                         )}
                       </tbody>
                     </table>
+                  </div>
+                </div>
+
+                <div className="card" style={{ display: 'flex', flexDirection: 'column', marginBottom: 0 }}>
+                  <div className="card-header">
+                    <h3 className="card-title">{user.role === 'Safety Officer' ? 'Driver Compliance Status' : 'Vehicle Fleet Status'}</h3>
+                  </div>
+                  <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '20px', justifyContent: 'center' }}>
+                    {(() => {
+                      if (user.role === 'Safety Officer') {
+                        const totalDrv = drivers.length || 1;
+                        const dAvail = drivers.filter(d => d.status === 'Available').length;
+                        const dTrip = drivers.filter(d => d.status === 'On Trip').length;
+                        const dOff = drivers.filter(d => d.status === 'Off Duty').length;
+                        const dSusp = drivers.filter(d => d.status === 'Suspended').length;
+
+                        const availPct = Math.round((dAvail / totalDrv) * 100);
+                        const tripPct = Math.round((dTrip / totalDrv) * 100);
+                        const offPct = Math.round((dOff / totalDrv) * 100);
+                        const suspPct = Math.round((dSusp / totalDrv) * 100);
+
+                        return (
+                          <>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: '600' }}>
+                                <span style={{ color: 'var(--success)' }}>Available ({dAvail})</span>
+                                <span>{availPct}%</span>
+                              </div>
+                              <div style={{ width: '100%', height: '10px', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: '5px', overflow: 'hidden' }}>
+                                <div style={{ width: `${availPct}%`, height: '100%', backgroundColor: 'var(--success)' }}></div>
+                              </div>
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: '600' }}>
+                                <span style={{ color: 'var(--info)' }}>On Trip ({dTrip})</span>
+                                <span>{tripPct}%</span>
+                              </div>
+                              <div style={{ width: '100%', height: '10px', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: '5px', overflow: 'hidden' }}>
+                                <div style={{ width: `${tripPct}%`, height: '100%', backgroundColor: 'var(--info)' }}></div>
+                              </div>
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: '600' }}>
+                                <span style={{ color: 'var(--text-muted)' }}>Off Duty ({dOff})</span>
+                                <span>{offPct}%</span>
+                              </div>
+                              <div style={{ width: '100%', height: '10px', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: '5px', overflow: 'hidden' }}>
+                                <div style={{ width: `${dOff}%`, height: '100%', backgroundColor: 'var(--text-muted)' }}></div>
+                              </div>
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: '600' }}>
+                                <span style={{ color: 'var(--danger)' }}>Suspended ({dSusp})</span>
+                                <span>{suspPct}%</span>
+                              </div>
+                              <div style={{ width: '100%', height: '10px', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: '5px', overflow: 'hidden' }}>
+                                <div style={{ width: `${dSusp}%`, height: '100%', backgroundColor: 'var(--danger)' }}></div>
+                              </div>
+                            </div>
+                          </>
+                        );
+                      } else {
+                        const totalVeh = vehicles.length || 1;
+                        const avail = vehicles.filter(v => v.status === 'Available').length;
+                        const trip = vehicles.filter(v => v.status === 'On Trip').length;
+                        const shop = vehicles.filter(v => v.status === 'In Shop').length;
+                        const ret = vehicles.filter(v => v.status === 'Retired').length;
+
+                        const availPct = Math.round((avail / totalVeh) * 100);
+                        const tripPct = Math.round((trip / totalVeh) * 100);
+                        const shopPct = Math.round((shop / totalVeh) * 100);
+                        const retPct = Math.round((ret / totalVeh) * 100);
+
+                        return (
+                          <>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: '600' }}>
+                                <span style={{ color: 'var(--success)' }}>Available ({avail})</span>
+                                <span>{availPct}%</span>
+                              </div>
+                              <div style={{ width: '100%', height: '10px', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: '5px', overflow: 'hidden' }}>
+                                <div style={{ width: `${availPct}%`, height: '100%', backgroundColor: 'var(--success)' }}></div>
+                              </div>
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: '600' }}>
+                                <span style={{ color: 'var(--info)' }}>On Trip ({trip})</span>
+                                <span>{tripPct}%</span>
+                              </div>
+                              <div style={{ width: '100%', height: '10px', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: '5px', overflow: 'hidden' }}>
+                                <div style={{ width: `${tripPct}%`, height: '100%', backgroundColor: 'var(--info)' }}></div>
+                              </div>
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: '600' }}>
+                                <span style={{ color: 'var(--danger)' }}>In Shop ({shop})</span>
+                                <span>{shopPct}%</span>
+                              </div>
+                              <div style={{ width: '100%', height: '10px', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: '5px', overflow: 'hidden' }}>
+                                <div style={{ width: `${shopPct}%`, height: '100%', backgroundColor: 'var(--danger)' }}></div>
+                              </div>
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: '600' }}>
+                                <span style={{ color: 'var(--text-muted)' }}>Retired ({ret})</span>
+                                <span>{retPct}%</span>
+                              </div>
+                              <div style={{ width: '100%', height: '10px', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: '5px', overflow: 'hidden' }}>
+                                <div style={{ width: `${retPct}%`, height: '100%', backgroundColor: 'var(--text-muted)' }}></div>
+                              </div>
+                            </div>
+                          </>
+                        );
+                      }
+                    })()}
                   </div>
                 </div>
               </div>
@@ -1368,11 +1487,12 @@ export default function App() {
                 <>
                   <div className="charts-grid">
                     {/* Monthly Cost vs Revenue */}
-                    <div className="card" style={{ height: 'auto' }}>
+                    <div className="card" style={{ height: 'auto', marginBottom: 0 }}>
                       <h3 className="card-title" style={{ marginBottom: '20px' }}>Monthly Revenue vs Total Costs</h3>
                       <div style={{ width: '100%', height: '300px' }}>
                         <ResponsiveContainer>
                           <BarChart data={analytics.monthlyChartData}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
                             <XAxis dataKey="month" stroke="var(--text-secondary)" />
                             <YAxis stroke="var(--text-secondary)" />
                             <Tooltip contentStyle={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)', color: '#fff' }} />
@@ -1385,11 +1505,12 @@ export default function App() {
                     </div>
 
                     {/* Costliest vehicles bar chart */}
-                    <div className="card" style={{ height: 'auto' }}>
+                    <div className="card" style={{ height: 'auto', marginBottom: 0 }}>
                       <h3 className="card-title" style={{ marginBottom: '20px' }}>Top Costliest Vehicles (₹)</h3>
                       <div style={{ width: '100%', height: '300px' }}>
                         <ResponsiveContainer>
                           <BarChart data={analytics.vehicles.slice(0, 5).sort((a,b)=> b.operational_cost - a.operational_cost)} layout="vertical">
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
                             <XAxis type="number" stroke="var(--text-secondary)" />
                             <YAxis type="category" dataKey="name_model" stroke="var(--text-secondary)" width={100} />
                             <Tooltip contentStyle={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }} />
@@ -1398,6 +1519,71 @@ export default function App() {
                                 <Cell key={`cell-${index}`} fill={index === 0 ? 'var(--danger)' : index === 1 ? 'var(--warning)' : 'var(--info)'} />
                               ))}
                             </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="charts-grid" style={{ gridTemplateColumns: '1fr 1fr', marginTop: '24px' }}>
+                    {/* Expense Breakdown Pie Chart */}
+                    <div className="card" style={{ height: 'auto', marginBottom: 0 }}>
+                      <h3 className="card-title" style={{ marginBottom: '20px' }}>Expenses by Category Breakdown</h3>
+                      <div style={{ width: '100%', height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {(() => {
+                          const fuelTotal = expenses.filter(e => e.type === 'Fuel').reduce((sum, e) => sum + e.cost, 0);
+                          const maintTotal = expenses.filter(e => e.type === 'Maintenance').reduce((sum, e) => sum + e.cost, 0);
+                          const tollTotal = expenses.filter(e => e.type === 'Toll').reduce((sum, e) => sum + e.cost, 0);
+                          const otherTotal = expenses.filter(e => e.type === 'Other').reduce((sum, e) => sum + e.cost, 0);
+
+                          const pieData = [
+                            { name: 'Fuel', value: fuelTotal, color: '#3b82f6' },
+                            { name: 'Maintenance', value: maintTotal, color: '#ef4444' },
+                            { name: 'Tolls', value: tollTotal, color: '#10b981' },
+                            { name: 'Other', value: otherTotal, color: '#f59e0b' }
+                          ].filter(d => d.value > 0);
+
+                          if (pieData.length === 0) {
+                            return <div style={{ color: 'var(--text-secondary)' }}>No expense data recorded.</div>;
+                          }
+
+                          return (
+                            <ResponsiveContainer>
+                              <PieChart>
+                                <Pie
+                                  data={pieData}
+                                  cx="50%"
+                                  cy="50%"
+                                  innerRadius={60}
+                                  outerRadius={90}
+                                  paddingAngle={5}
+                                  dataKey="value"
+                                >
+                                  {pieData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                  ))}
+                                </Pie>
+                                <Tooltip formatter={(value) => `₹${value.toLocaleString()}`} />
+                                <Legend />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          );
+                        })()}
+                      </div>
+                    </div>
+
+                    {/* Fuel Efficiency Comparison */}
+                    <div className="card" style={{ height: 'auto', marginBottom: 0 }}>
+                      <h3 className="card-title" style={{ marginBottom: '20px' }}>Vehicle Fuel Efficiency Comparison (km/L)</h3>
+                      <div style={{ width: '100%', height: '300px' }}>
+                        <ResponsiveContainer>
+                          <BarChart data={analytics.vehicles.filter(v => v.fuel_efficiency > 0)}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                            <XAxis dataKey="registration_number" stroke="var(--text-secondary)" />
+                            <YAxis stroke="var(--text-secondary)" />
+                            <Tooltip contentStyle={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)', color: '#fff' }} />
+                            <Legend />
+                            <Bar dataKey="fuel_efficiency" fill="var(--success)" name="Efficiency (km/L)" />
                           </BarChart>
                         </ResponsiveContainer>
                       </div>

@@ -1813,7 +1813,7 @@ export default function App() {
                                   {trip.vehicle_reg_no}
                                 </td>
                                 <td>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
                                     <div style={{ 
                                       width: '20px', 
                                       height: '20px', 
@@ -1824,14 +1824,24 @@ export default function App() {
                                       fontWeight: '700', 
                                       display: 'flex', 
                                       alignItems: 'center', 
-                                      justifyContent: 'center' 
+                                      justifyContent: 'center',
+                                      flexShrink: 0
                                     }}>
                                       {trip.driver_name ? trip.driver_name.charAt(0) : 'D'}
                                     </div>
                                     <span style={{ fontSize: '12px' }}>{trip.driver_name}</span>
                                   </div>
                                 </td>
-                                <td style={{ fontSize: '11px' }} title={`${trip.source} → ${trip.destination}`}>{getShortAddressName(trip.source)} → {getShortAddressName(trip.destination)}</td>
+                                <td style={{ fontSize: '11px', whiteSpace: 'nowrap' }} title={`${trip.source} → ${trip.destination}`}>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', maxWidth: '180px' }}>
+                                    <span style={{ fontWeight: '600', color: 'var(--text-primary)', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                                      {getShortAddressName(trip.source)}
+                                    </span>
+                                    <span style={{ color: 'var(--text-muted)', fontSize: '10px', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                                      → {getShortAddressName(trip.destination)}
+                                    </span>
+                                  </div>
+                                </td>
                                 <td>
                                   {(() => {
                                     if (trip.status === 'Completed') return <span style={{ color: 'var(--text-muted)' }}>--</span>;

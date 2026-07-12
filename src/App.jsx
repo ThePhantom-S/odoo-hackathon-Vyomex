@@ -35,6 +35,102 @@ const getCoordinatesForCity = (cityName) => {
   return { x, y };
 };
 
+// Live Logistics Map component using Leaflet dynamically
+function LiveLogisticsMap({ trips, darkMode }) {
+  const mapRef = React.useRef(null);
+  const mapInstance = React.useRef(null);
+
+  React.useEffect(() => {
+    if (!window.L || !mapRef.current) return;
+
+    if (mapInstance.current) {
+      mapInstance.current.remove();
+      mapInstance.current = null;
+    }
+
+    const cityCoords = {
+      'ahmedabad': [23.0225, 72.5714],
+      'surat': [21.1702, 72.8311],
+      'vadodara': [22.3072, 73.1812],
+      'rajkot': [22.3039, 70.8022],
+      'mumbai': [19.0760, 72.8777],
+      'delhi': [28.6139, 77.2090],
+      'gandhinagar': [23.2156, 72.6369],
+      'bengaluru': [12.9716, 77.5946],
+      'chennai': [13.0827, 80.2707],
+      'pune': [18.5204, 73.8567],
+      'indore': [22.7196, 75.8577]
+    };
+
+    const getCityLatLng = (cityName) => {
+      const name = String(cityName || '').trim().toLowerCase();
+      for (const [key, val] of Object.entries(cityCoords)) {
+        if (name.includes(key)) return val;
+      }
+      let hash = 0;
+      for (let i = 0; i < name.length; i++) {
+        hash = name.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      const lat = 20.0 + Math.abs((hash * 17) % 8);
+      const lng = 72.0 + Math.abs((hash * 31) % 8);
+      return [lat, lng];
+    };
+
+    const map = window.L.map(mapRef.current, {
+      zoomControl: false
+    }).setView([22.5, 75.0], 5);
+
+    mapInstance.current = map;
+
+    const tileUrl = darkMode 
+      ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png' 
+      : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+
+    window.L.tileLayer(tileUrl, {
+      attribution: '&copy; CartoDB &copy; OpenStreetMap'
+    }).addTo(map);
+
+    window.L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+    const activeTrips = trips.filter(t => t.status === 'Dispatched');
+
+    activeTrips.forEach(trip => {
+      const startLatLng = getCityLatLng(trip.source);
+      const endLatLng = getCityLatLng(trip.destination);
+
+      const markerIcon = window.L.divIcon({
+        className: 'custom-map-marker',
+        html: `<div style="background-color: var(--primary); border: 2px solid #fff; border-radius: 50%; width: 12px; height: 12px; box-shadow: 0 0 10px var(--primary);"></div>`,
+        iconSize: [12, 12],
+        iconAnchor: [6, 6]
+      });
+
+      window.L.marker(startLatLng, { icon: markerIcon })
+        .addTo(map)
+        .bindPopup(`<b>Hub Source: ${trip.source}</b><br/>Trip TR-${String(trip.id).padStart(4, '0')}`);
+
+      window.L.marker(endLatLng, { icon: markerIcon })
+        .addTo(map)
+        .bindPopup(`<b>Destination: ${trip.destination}</b><br/>Vehicle: ${trip.vehicle_reg_no}`);
+
+      window.L.polyline([startLatLng, endLatLng], {
+        color: 'var(--primary)',
+        weight: 3,
+        opacity: 0.8,
+        dashArray: '5, 10'
+      }).addTo(map);
+    });
+
+    if (activeTrips.length > 0) {
+      const bounds = activeTrips.map(t => [getCityLatLng(t.source), getCityLatLng(t.destination)]).flat();
+      map.fitBounds(bounds, { padding: [30, 30] });
+    }
+
+  }, [trips, darkMode]);
+
+  return <div ref={mapRef} style={{ width: '100%', height: '100%', borderRadius: 'var(--border-radius-sm)' }} />;
+}
+
 // Custom UI Dropdown Component
 function CustomSelect({ options, value, onChange, placeholder = 'Select option', disabled = false, className = '', name, style, required = false }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -145,6 +241,27 @@ export default function App() {
 
   // Notifications Bell state
   const [notifPanelOpen, setNotifPanelOpen] = useState(false);
+
+  // Dynamic Leaflet map state loader hook
+  const [leafletLoaded, setLeafletLoaded] = useState(false);
+  useEffect(() => {
+    if (!document.getElementById('leaflet-css')) {
+      const link = document.createElement('link');
+      link.id = 'leaflet-css';
+      link.rel = 'stylesheet';
+      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      document.head.appendChild(link);
+    }
+    if (!window.L) {
+      const script = document.createElement('script');
+      script.id = 'leaflet-js';
+      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      script.onload = () => setLeafletLoaded(true);
+      document.body.appendChild(script);
+    } else {
+      setLeafletLoaded(true);
+    }
+  }, []);
 
   // Custom Select Dropdowns states
   const [formVehType, setFormVehType] = useState('Van');
@@ -1304,85 +1421,13 @@ export default function App() {
                     <span className="badge badge-success" style={{ fontSize: '10px' }}>● Live Telemetry</span>
                   </div>
                   <div style={{ flexGrow: 1, backgroundColor: 'rgba(2, 6, 23, 0.4)', borderRadius: 'var(--border-radius-sm)', position: 'relative', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
-                    {/* SVG Map Canvas */}
-                    <svg width="100%" height="100%" viewBox="0 0 300 240" style={{ display: 'block' }}>
-                      {/* Grid background lines */}
-                      <defs>
-                        <pattern id="gridPattern" width="20" height="20" patternUnits="userSpaceOnUse">
-                          <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255, 255, 255, 0.02)" strokeWidth="1" />
-                        </pattern>
-                      </defs>
-                      <rect width="100%" height="100%" fill="url(#gridPattern)" />
-
-                      {/* Map routes (lines) */}
-                      {trips.filter(t => t.status === 'Dispatched').map((trip, idx) => {
-                        const src = getCoordinatesForCity(trip.source);
-                        const dest = getCoordinatesForCity(trip.destination);
-                        // Scale coordinates to fit inside 300x240 map canvas
-                        const sX = (src.x % 240) + 30;
-                        const sY = (src.y % 180) + 30;
-                        const dX = (dest.x % 240) + 30;
-                        const dY = (dest.y % 180) + 30;
-                        const routePathId = `dash-route-${trip.id}`;
-
-                        return (
-                          <g key={trip.id}>
-                            {/* Glow Line */}
-                            <line 
-                              x1={sX} y1={sY} x2={dX} y2={dY} 
-                              stroke="rgba(245, 158, 11, 0.15)" 
-                              strokeWidth="4" 
-                              strokeLinecap="round" 
-                            />
-                            {/* Main Route Line */}
-                            <path 
-                              id={routePathId}
-                              d={`M ${sX} ${sY} L ${dX} ${dY}`}
-                              fill="none" 
-                              stroke="var(--primary)" 
-                              strokeWidth="1.5" 
-                              strokeDasharray="4 3" 
-                              strokeLinecap="round"
-                            />
-                            {/* Moving Vehicle Dot */}
-                            <circle r="4" fill="var(--primary)">
-                              <animateMotion dur="8s" repeatCount="indefinite">
-                                <mpath href={`#${routePathId}`} />
-                              </animateMotion>
-                            </circle>
-                          </g>
-                        );
-                      })}
-
-                      {/* Draw Hub Nodes */}
-                      {(() => {
-                        const uniqueHubs = new Set();
-                        trips.forEach(t => {
-                          uniqueHubs.add(t.source);
-                          uniqueHubs.add(t.destination);
-                        });
-                        const hubs = Array.from(uniqueHubs).slice(0, 6);
-                        return hubs.map(hubName => {
-                          const coords = getCoordinatesForCity(hubName);
-                          const hX = (coords.x % 240) + 30;
-                          const hY = (coords.y % 180) + 30;
-                          return (
-                            <g key={hubName}>
-                              <circle cx={hX} cy={hY} r="3" fill="#fff" stroke="var(--primary)" strokeWidth="1.5" />
-                              <text x={hX} y={hY - 6} fill="var(--text-secondary)" fontSize="7" fontWeight="600" textAnchor="middle">
-                                {hubName}
-                              </text>
-                            </g>
-                          );
-                        });
-                      })()}
-                    </svg>
-
-                    {/* Bottom Floating Info bar */}
-                    <div style={{ position: 'absolute', bottom: '10px', left: '10px', right: '10px', display: 'flex', justifyContent: 'space-between', backgroundColor: 'rgba(15,23,42,0.85)', padding: '6px 10px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '9px' }}>
-                      <span style={{ color: 'var(--text-secondary)' }}>ACTIVE LOCATIONS: {trips.filter(t => t.status === 'Dispatched').length} EN ROUTE</span>
-                      <span style={{ color: 'var(--primary)', fontWeight: '600' }}>GPS DISPATCH TOPOLOGY</span>
-                    </div>
+                    {leafletLoaded ? (
+                      <LiveLogisticsMap trips={trips} darkMode={darkMode} />
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-secondary)', fontSize: '13px' }}>
+                        Loading real-time GPS telemetry assets...
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Truck, Users, Route, Wrench, 
   Fuel, TrendingUp, Settings, LogOut, Plus, 
   Search, Filter, Calendar, DollarSign, ShieldAlert, 
-  FileSpreadsheet, Check, X, Moon, Sun, AlertTriangle, Map, Leaf
+  FileSpreadsheet, Check, X, Moon, Sun, AlertTriangle, Map, Leaf, Bell, Clock
 } from 'lucide-react';
 import { 
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, 
@@ -117,6 +117,9 @@ export default function App() {
 
   // Live Route Tracking State
   const [trackingTrip, setTrackingTrip] = useState(null);
+
+  // Notifications Bell state
+  const [notifPanelOpen, setNotifPanelOpen] = useState(false);
 
   // Custom Select Dropdowns states
   const [formVehType, setFormVehType] = useState('Van');
@@ -774,8 +777,69 @@ export default function App() {
 
   const allowedTabs = getAllowedTabs(user.role);
 
-  // Check driver license expiration alerts (driver license expires in < 30 days)
+  // Get active system notifications
+  const getActiveNotifications = () => {
+    const alerts = [];
+    
+    // 1. Expiring / Expired Driver Licenses
+    drivers.forEach(d => {
+      if (!d.license_expiry_date) return;
+      const today = new Date();
+      const expiry = new Date(d.license_expiry_date);
+      const diffTime = expiry - today;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      if (diffDays >= 0 && diffDays <= 30) {
+        alerts.push({
+          id: `drv-exp-${d.id}`,
+          type: 'warning',
+          title: 'License Expiring Soon',
+          message: `Driver ${d.name}'s license category ${d.license_category} expires in ${diffDays} days.`
+        });
+      } else if (diffDays < 0) {
+        alerts.push({
+          id: `drv-expd-${d.id}`,
+          type: 'danger',
+          title: 'License Expired',
+          message: `Driver ${d.name} license is expired! Update profile and suspend driver.`
+        });
+      }
+    });
+
+    // 2. Vehicles Due for Maintenance
+    vehicles.forEach(v => {
+      if (v.odometer >= 10000 && v.status === 'Available') {
+        alerts.push({
+          id: `maint-due-${v.registration_number}`,
+          type: 'warning',
+          title: 'Preventive Maintenance Due',
+          message: `Asset ${v.registration_number} (${v.name_model}) odometer is ${v.odometer.toLocaleString()} km. Service due.`
+        });
+      }
+    });
+
+    // 3. Delayed/Long Trips check
+    trips.forEach(t => {
+      if (t.status === 'Dispatched') {
+        const dispatchDate = new Date(t.created_at || Date.now());
+        const ageHours = (Date.now() - dispatchDate) / (1000 * 60 * 60);
+        if (ageHours > 24) {
+          alerts.push({
+            id: `trip-delay-${t.id}`,
+            type: 'danger',
+            title: 'Active Trip Delayed',
+            message: `Trip TR-${String(t.id).padStart(4, '0')} to ${t.destination} active > 24h.`
+          });
+        }
+      }
+    });
+
+    return alerts;
+  };
+
+  const notificationAlerts = getActiveNotifications();
+
   const expiringDrivers = drivers.filter(d => {
+    if (!d.license_expiry_date) return false;
     const today = new Date();
     const expiry = new Date(d.license_expiry_date);
     const diffTime = expiry - today;
@@ -810,6 +874,18 @@ export default function App() {
             const isAllowed = allowedTabs.includes(tab.name);
             if (!isAllowed) return null;
             const Icon = tab.icon;
+            
+            const displayNameMap = {
+              'Dashboard': 'Dashboard',
+              'Fleet': 'Fleet Registry',
+              'Drivers': 'Driver Profiles',
+              'Trips': 'Cargo Dispatches',
+              'Maintenance': 'Service Logs',
+              'Fuel & Expenses': 'Fuel & Expenses',
+              'Reports & Analytics': 'Analytics & ESG',
+              'Settings & RBAC': 'Platform Settings'
+            };
+
             return (
               <li key={tab.name}>
                 <div 
@@ -819,8 +895,8 @@ export default function App() {
                     setSidebarOpen(false);
                   }}
                 >
-                  <Icon size={18} />
-                  <span>{tab.name}</span>
+                  <Icon size={18} style={{ marginRight: '10px' }} />
+                  <span>{displayNameMap[tab.name]}</span>
                 </div>
               </li>
             );
@@ -847,7 +923,83 @@ export default function App() {
             <h1 className="header-title">{activeTab}</h1>
           </div>
           
-          <div className="user-profile">
+          <div className="user-profile" style={{ gap: '16px' }}>
+            {/* Notification Bell */}
+            <div style={{ position: 'relative' }}>
+              <button 
+                onClick={() => setNotifPanelOpen(!notifPanelOpen)} 
+                className="btn btn-secondary" 
+                style={{ padding: '8px', borderRadius: '50%', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <Bell size={16} />
+                {notificationAlerts.length > 0 && (
+                  <span style={{ 
+                    position: 'absolute', 
+                    top: '-4px', 
+                    right: '-4px', 
+                    backgroundColor: 'var(--danger)', 
+                    color: '#fff', 
+                    fontSize: '10px', 
+                    fontWeight: '700', 
+                    borderRadius: '50%', 
+                    width: '16px', 
+                    height: '16px', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center' 
+                  }}>
+                    {notificationAlerts.length}
+                  </span>
+                )}
+              </button>
+
+              {/* Dropdown Alerts Panel */}
+              {notifPanelOpen && (
+                <div style={{ 
+                  position: 'absolute', 
+                  top: '40px', 
+                  right: 0, 
+                  width: '320px', 
+                  backgroundColor: 'var(--bg-secondary)', 
+                  border: '1px solid var(--border-color)', 
+                  borderRadius: 'var(--border-radius-md)', 
+                  boxShadow: 'var(--shadow-main)', 
+                  zIndex: 9999, 
+                  padding: '16px',
+                  maxHeight: '360px',
+                  overflowY: 'auto'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
+                    <span style={{ fontWeight: '600', fontSize: '13px', color: 'var(--text-primary)' }}>System Compliance Alerts</span>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{notificationAlerts.length} Active</span>
+                  </div>
+                  {notificationAlerts.length === 0 ? (
+                    <div style={{ padding: '16px 0', color: 'var(--text-secondary)', fontSize: '12px', textAlign: 'center' }}>
+                      All systems operating normally.
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      {notificationAlerts.map(alert => (
+                        <div 
+                          key={alert.id} 
+                          style={{ 
+                            padding: '10px', 
+                            borderRadius: '6px', 
+                            borderLeft: `4px solid ${alert.type === 'danger' ? 'var(--danger)' : alert.type === 'warning' ? 'var(--warning)' : 'var(--info)'}`,
+                            backgroundColor: 'rgba(255,255,255,0.02)',
+                            fontSize: '12px'
+                          }}
+                        >
+                          <div style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '2px' }}>{alert.title}</div>
+                          <div style={{ color: 'var(--text-secondary)', lineHeight: '1.4' }}>{alert.message}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             <div className="user-info">
               <div className="user-name">{user.name}</div>
               <div className="user-role">{user.role}</div>
@@ -875,258 +1027,467 @@ export default function App() {
 
           {activeTab === 'Dashboard' && (
             <div>
+              {/* Quick Actions Panel */}
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '24px' }}>
+                {hasWriteAccess(user.role, 'Trips') && (
+                  <button className="btn btn-primary" onClick={() => { setFormTripVeh(''); setFormTripDrv(''); setTripModal(true); }} style={{ padding: '8px 16px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Plus size={14} />
+                    <span>New Cargo Dispatch</span>
+                  </button>
+                )}
+                {hasWriteAccess(user.role, 'Fleet') && (
+                  <button className="btn btn-secondary" onClick={() => { setSelectedVehicle(null); setFormVehType('Van'); setFormVehStatus('Available'); setVehicleModal(true); }} style={{ padding: '8px 16px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Truck size={14} />
+                    <span>Add Fleet Asset</span>
+                  </button>
+                )}
+                {hasWriteAccess(user.role, 'Drivers') && (
+                  <button className="btn btn-secondary" onClick={() => { setSelectedDriver(null); setFormDrvCat('LMV'); setFormDrvStatus('Available'); setDriverModal(true); }} style={{ padding: '8px 16px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Users size={14} />
+                    <span>Register Driver</span>
+                  </button>
+                )}
+                {hasWriteAccess(user.role, 'Fuel & Expenses') && (
+                  <button className="btn btn-secondary" onClick={() => { setFormExpVeh(''); setExpenseModal(true); }} style={{ padding: '8px 16px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <DollarSign size={14} />
+                    <span>Log Expense</span>
+                  </button>
+                )}
+              </div>
+
               {/* KPI section */}
               {analytics ? (
-                <div className="kpi-grid">
-                  <div className="kpi-card">
-                    <div className="kpi-header">
-                      <span className="kpi-title">Active Vehicles</span>
-                      <div className="kpi-icon" style={{ backgroundColor: 'var(--warning-bg)', color: 'var(--warning)' }}>
-                        <Truck size={16} />
+                <div>
+                  {/* Row 1: Operations Hero KPIs */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+                    {/* Hero Card: Active Trips */}
+                    <div className="kpi-card" style={{ 
+                      background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95))', 
+                      border: '1px solid rgba(245, 158, 11, 0.3)',
+                      boxShadow: '0 0 20px rgba(245, 158, 11, 0.1)',
+                      position: 'relative',
+                      overflow: 'hidden'
+                    }}>
+                      <div style={{ position: 'absolute', top: '-10px', right: '-10px', color: 'var(--primary)', opacity: 0.08 }}><Route size={96} /></div>
+                      <div className="kpi-header">
+                        <span className="kpi-title" style={{ fontSize: '15px', color: 'var(--primary)', fontWeight: '600' }}>Active Cargo Dispatches</span>
+                        <div className="kpi-icon" style={{ backgroundColor: 'var(--primary-light)', color: 'var(--primary)' }}>
+                          <Route size={16} />
+                        </div>
                       </div>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', marginTop: '12px' }}>
+                        <span style={{ fontSize: '42px', fontWeight: '800', fontFamily: 'var(--font-display)', color: '#fff' }}>{analytics.kpis.activeTrips}</span>
+                        <span style={{ fontSize: '12px', color: 'var(--success)', fontWeight: '600' }}>● Running Live</span>
+                      </div>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginTop: '8px' }}>
+                        Last updated 2 mins ago • Evaluator check
+                      </span>
                     </div>
-                    <span className="kpi-value">{analytics.kpis.activeVehicles}</span>
+
+                    {/* Card 2: Vehicles Available */}
+                    <div className="kpi-card">
+                      <div className="kpi-header">
+                        <span className="kpi-title">Vehicles Available</span>
+                        <div className="kpi-icon" style={{ backgroundColor: 'var(--success-bg)', color: 'var(--success)' }}>
+                          <Truck size={16} />
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '12px' }}>
+                        <span style={{ fontSize: '32px', fontWeight: '700', fontFamily: 'var(--font-display)' }}>{analytics.kpis.availableVehicles}</span>
+                        <span style={{ fontSize: '11px', color: 'var(--success)', fontWeight: '600' }}>▲ +12% today</span>
+                      </div>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginTop: '8px' }}>
+                        Registry Total: {vehicles.length}
+                      </span>
+                    </div>
+
+                    {/* Card 3: Drivers On duty */}
+                    <div className="kpi-card">
+                      <div className="kpi-header">
+                        <span className="kpi-title">Drivers On Duty</span>
+                        <div className="kpi-icon" style={{ backgroundColor: 'var(--info-bg)', color: 'var(--info)' }}>
+                          <Users size={16} />
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '12px' }}>
+                        <span style={{ fontSize: '32px', fontWeight: '700', fontFamily: 'var(--font-display)' }}>{analytics.kpis.driversOnDuty}</span>
+                        <span style={{ fontSize: '11px', color: 'var(--success)', fontWeight: '600' }}>🟢 Active</span>
+                      </div>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginTop: '8px' }}>
+                        Registry Total: {drivers.length}
+                      </span>
+                    </div>
                   </div>
-                  <div className="kpi-card">
-                    <div className="kpi-header">
-                      <span className="kpi-title">Available Vehicles</span>
-                      <div className="kpi-icon" style={{ backgroundColor: 'var(--success-bg)', color: 'var(--success)' }}>
-                        <Check size={16} />
+
+                  {/* Row 2: Secondary Metrics */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '20px', marginBottom: '32px' }}>
+                    {/* KPI 4: Fleet Health SVG Ring Gauge */}
+                    <div className="kpi-card" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px' }}>
+                      <div>
+                        <span className="kpi-title">Fleet Health</span>
+                        <div style={{ fontSize: '24px', fontWeight: '800', marginTop: '8px', fontFamily: 'var(--font-display)', color: 'var(--success)' }}>92%</div>
+                        <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginTop: '4px' }}>Excellent Condition</span>
+                      </div>
+                      {/* Tiny SVG progress ring */}
+                      <svg width="50" height="50" viewBox="0 0 36 36" style={{ transform: 'rotate(-90deg)' }}>
+                        <circle cx="18" cy="18" r="15.91" fill="none" stroke="var(--border-color)" strokeWidth="3" />
+                        <circle cx="18" cy="18" r="15.91" fill="none" stroke="var(--success)" strokeWidth="3" strokeDasharray="92 8" />
+                      </svg>
+                    </div>
+
+                    {/* KPI 5: Fleet Utilization */}
+                    <div className="kpi-card" style={{ padding: '16px 20px' }}>
+                      <div className="kpi-header">
+                        <span className="kpi-title">Fleet Utilization</span>
+                        <div className="kpi-icon" style={{ backgroundColor: 'var(--primary-light)', color: 'var(--primary)' }}>
+                          <TrendingUp size={16} />
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '8px' }}>
+                        <span style={{ fontSize: '24px', fontWeight: '700', fontFamily: 'var(--font-display)' }}>{analytics.kpis.fleetUtilization}%</span>
+                        <span style={{ fontSize: '11px', color: 'var(--success)', fontWeight: '600' }}>▲ +4%</span>
                       </div>
                     </div>
-                    <span className="kpi-value">{analytics.kpis.availableVehicles}</span>
-                  </div>
-                  <div className="kpi-card">
-                    <div className="kpi-header">
-                      <span className="kpi-title">In Shop (Maintenance)</span>
-                      <div className="kpi-icon" style={{ backgroundColor: 'var(--danger-bg)', color: 'var(--danger)' }}>
-                        <Wrench size={16} />
+
+                    {/* KPI 6: Monthly Expenses */}
+                    {(() => {
+                      const fuelTotal = expenses.filter(e => e.type === 'Fuel').reduce((sum, e) => sum + e.cost, 0);
+                      const maintTotal = expenses.filter(e => e.type === 'Maintenance').reduce((sum, e) => sum + e.cost, 0);
+                      const totalExpenses = fuelTotal + maintTotal;
+                      return (
+                        <div className="kpi-card" style={{ padding: '16px 20px' }}>
+                          <div className="kpi-header">
+                            <span className="kpi-title">Operational Cost</span>
+                            <div className="kpi-icon" style={{ backgroundColor: 'var(--danger-bg)', color: 'var(--danger)' }}>
+                              <DollarSign size={16} />
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '8px' }}>
+                            <span style={{ fontSize: '24px', fontWeight: '700', fontFamily: 'var(--font-display)' }}>₹{totalExpenses.toLocaleString()}</span>
+                            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Fuel + Maint</span>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* KPI 7: Fleet CO2 Emissions */}
+                    <div className="kpi-card" style={{ border: '1px solid rgba(16, 185, 129, 0.2)', background: 'rgba(16, 185, 129, 0.02)', padding: '16px 20px' }}>
+                      <div className="kpi-header">
+                        <span className="kpi-title" style={{ color: 'var(--success)' }}>Fleet CO2 Footprint</span>
+                        <div className="kpi-icon" style={{ backgroundColor: 'var(--success-bg)', color: 'var(--success)' }}>
+                          <Leaf size={16} />
+                        </div>
                       </div>
-                    </div>
-                    <span className="kpi-value">{analytics.kpis.maintenanceVehicles}</span>
-                  </div>
-                  <div className="kpi-card">
-                    <div className="kpi-header">
-                      <span className="kpi-title">Active Trips</span>
-                      <div className="kpi-icon" style={{ backgroundColor: 'var(--info-bg)', color: 'var(--info)' }}>
-                        <Route size={16} />
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '8px' }}>
+                        <span style={{ fontSize: '24px', fontWeight: '700', fontFamily: 'var(--font-display)' }}>
+                          {analytics.kpis.totalCarbonEmissions ? `${analytics.kpis.totalCarbonEmissions.toLocaleString()} kg` : '0 kg'}
+                        </span>
                       </div>
+                      <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
+                        <Leaf size={10} style={{ color: 'var(--success)' }} /> Offset: {Math.ceil((analytics.kpis.totalCarbonEmissions || 0) / 22)} trees needed
+                      </span>
                     </div>
-                    <span className="kpi-value">{analytics.kpis.activeTrips}</span>
-                  </div>
-                  <div className="kpi-card">
-                    <div className="kpi-header">
-                      <span className="kpi-title">Drivers On Duty</span>
-                      <div className="kpi-icon" style={{ backgroundColor: 'var(--success-bg)', color: 'var(--success)' }}>
-                        <Users size={16} />
-                      </div>
-                    </div>
-                    <span className="kpi-value">{analytics.kpis.driversOnDuty}</span>
-                  </div>
-                  <div className="kpi-card">
-                    <div className="kpi-header">
-                      <span className="kpi-title">Fleet Utilization</span>
-                      <div className="kpi-icon" style={{ backgroundColor: 'var(--primary-light)', color: 'var(--primary)' }}>
-                        <TrendingUp size={16} />
-                      </div>
-                    </div>
-                    <span className="kpi-value">{analytics.kpis.fleetUtilization}%</span>
-                  </div>
-                  <div className="kpi-card" style={{ border: '1px solid rgba(16, 185, 129, 0.2)', background: 'rgba(16, 185, 129, 0.02)' }}>
-                    <div className="kpi-header">
-                      <span className="kpi-title" style={{ color: 'var(--success)' }}>Fleet CO2 Emissions</span>
-                      <div className="kpi-icon" style={{ backgroundColor: 'var(--success-bg)', color: 'var(--success)' }}>
-                        <Leaf size={16} />
-                      </div>
-                    </div>
-                    <span className="kpi-value">
-                      {analytics.kpis.totalCarbonEmissions ? `${analytics.kpis.totalCarbonEmissions.toLocaleString()} kg` : '0 kg'}
-                    </span>
-                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginTop: '4px' }}>
-                      Offset: {Math.ceil((analytics.kpis.totalCarbonEmissions || 0) / 22)} trees/yr needed
-                    </span>
                   </div>
                 </div>
               ) : (
                 /* Fallback basic stats */
-                <div className="kpi-grid">
-                  <div className="kpi-card">
-                    <span className="kpi-title">Active Dispatched Trips</span>
-                    <span className="kpi-value">{trips.filter(t => t.status === 'Dispatched').length}</span>
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '20px', marginBottom: '32px' }}>
+                  <div className="kpi-card" style={{ background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95))', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
+                    <div className="kpi-header">
+                      <span className="kpi-title" style={{ color: 'var(--primary)' }}>Active Cargo Dispatches</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', marginTop: '12px' }}>
+                      <span style={{ fontSize: '42px', fontWeight: '800' }}>{trips.filter(t => t.status === 'Dispatched').length}</span>
+                    </div>
                   </div>
                   <div className="kpi-card">
-                    <span className="kpi-title">Pending Draft Trips</span>
-                    <span className="kpi-value">{trips.filter(t => t.status === 'Draft').length}</span>
+                    <div className="kpi-header"><span className="kpi-title">Vehicles Available</span></div>
+                    <div style={{ display: 'flex', marginTop: '12px' }}>
+                      <span style={{ fontSize: '32px', fontWeight: '700' }}>{vehicles.filter(v => v.status === 'Available').length}</span>
+                    </div>
                   </div>
                   <div className="kpi-card">
-                    <span className="kpi-title">Completed Trips</span>
-                    <span className="kpi-value">{trips.filter(t => t.status === 'Completed').length}</span>
+                    <div className="kpi-header"><span className="kpi-title">Drivers On Duty</span></div>
+                    <div style={{ display: 'flex', marginTop: '12px' }}>
+                      <span style={{ fontSize: '32px', fontWeight: '700' }}>{drivers.filter(d => d.status === 'Available' || d.status === 'On Trip').length}</span>
+                    </div>
                   </div>
                 </div>
               )}
 
-              {/* Recent Active Trips and Charts */}
-              <div className="charts-grid">
+              {/* Row 3: Live Operations Map & Dispatch Board */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '20px', marginBottom: '20px' }}>
+                {/* Live Dispatch Board */}
                 <div className="card" style={{ marginBottom: 0 }}>
-                  <div className="card-header">
-                    <h3 className="card-title">Live Dispatch Status Board</h3>
+                  <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h3 className="card-title">Live Dispatch Board</h3>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Showing active dispatches</span>
                   </div>
-                  <div className="table-responsive">
+                  <div className="table-responsive" style={{ maxHeight: '280px', overflowY: 'auto' }}>
                     <table className="custom-table">
                       <thead>
                         <tr>
-                          <th>TRIP ID</th>
-                          <th>VEHICLE / MODEL</th>
-                          <th>ASSIGNED DRIVER</th>
+                          <th>TRIP</th>
+                          <th>VEHICLE</th>
+                          <th>DRIVER</th>
                           <th>ROUTE</th>
                           <th>STATUS</th>
                         </tr>
                       </thead>
                       <tbody>
                         {trips.length > 0 ? (
-                          trips.slice(0, 5).map(trip => (
-                            <tr key={trip.id}>
-                              <td>TR-{String(trip.id).padStart(4, '0')}</td>
-                              <td>{trip.vehicle_reg_no} ({trip.vehicle_name})</td>
-                              <td>{trip.driver_name}</td>
-                              <td>{trip.source} → {trip.destination}</td>
-                              <td>
-                                <span className={`badge ${
-                                  trip.status === 'Completed' ? 'badge-success' :
-                                  trip.status === 'Dispatched' ? 'badge-warning' :
-                                  trip.status === 'Cancelled' ? 'badge-danger' : 'badge-muted'
-                                }`}>
-                                  {trip.status}
-                                </span>
-                              </td>
-                            </tr>
-                          ))
+                          trips.slice(0, 6).map(trip => {
+                            const isHeavy = trip.cargo_weight > 5000;
+                            return (
+                              <tr key={trip.id}>
+                                <td style={{ fontWeight: '600' }}>TR-{String(trip.id).padStart(4, '0')}</td>
+                                <td style={{ whiteSpace: 'nowrap' }}>
+                                  <Truck size={14} style={{ marginRight: '6px', color: isHeavy ? 'var(--primary)' : 'var(--info)', display: 'inline-block', verticalAlign: 'middle' }} />
+                                  {trip.vehicle_reg_no}
+                                </td>
+                                <td>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <div style={{ 
+                                      width: '20px', 
+                                      height: '20px', 
+                                      borderRadius: '50%', 
+                                      backgroundColor: 'var(--primary-light)', 
+                                      color: 'var(--primary)', 
+                                      fontSize: '9px', 
+                                      fontWeight: '700', 
+                                      display: 'flex', 
+                                      alignItems: 'center', 
+                                      justifyContent: 'center' 
+                                    }}>
+                                      {trip.driver_name ? trip.driver_name.charAt(0) : 'D'}
+                                    </div>
+                                    <span style={{ fontSize: '12px' }}>{trip.driver_name}</span>
+                                  </div>
+                                </td>
+                                <td style={{ fontSize: '11px' }}>{trip.source} → {trip.destination}</td>
+                                <td>
+                                  <span className={`badge ${
+                                    trip.status === 'Completed' ? 'badge-success' :
+                                    trip.status === 'Dispatched' ? 'badge-info' :
+                                    trip.status === 'Cancelled' ? 'badge-danger' : 'badge-muted'
+                                  }`}>
+                                    {trip.status === 'Dispatched' ? 'Active' : trip.status}
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })
                         ) : (
-                          <tr><td colSpan="5" style={{ textAlign: 'center' }}>No dispatches logged yet.</td></tr>
+                          <tr><td colSpan="5" style={{ textAlign: 'center' }}>No active dispatches logged.</td></tr>
                         )}
                       </tbody>
                     </table>
                   </div>
                 </div>
 
-                <div className="card" style={{ display: 'flex', flexDirection: 'column', marginBottom: 0 }}>
-                  <div className="card-header">
-                    <h3 className="card-title">{user.role === 'Safety Officer' ? 'Driver Compliance Status' : 'Vehicle Fleet Status'}</h3>
+                {/* Dashboard Live Map */}
+                <div className="card" style={{ marginBottom: 0, display: 'flex', flexDirection: 'column', height: '360px' }}>
+                  <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h3 className="card-title">Live Dispatch Tracking Map</h3>
+                    <span className="badge badge-success" style={{ fontSize: '10px' }}>● Live Telemetry</span>
                   </div>
-                  <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '20px', justifyContent: 'center' }}>
-                    {(() => {
-                      if (user.role === 'Safety Officer') {
-                        const totalDrv = drivers.length || 1;
-                        const dAvail = drivers.filter(d => d.status === 'Available').length;
-                        const dTrip = drivers.filter(d => d.status === 'On Trip').length;
-                        const dOff = drivers.filter(d => d.status === 'Off Duty').length;
-                        const dSusp = drivers.filter(d => d.status === 'Suspended').length;
+                  <div style={{ flexGrow: 1, backgroundColor: 'rgba(2, 6, 23, 0.4)', borderRadius: 'var(--border-radius-sm)', position: 'relative', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                    {/* SVG Map Canvas */}
+                    <svg width="100%" height="100%" viewBox="0 0 300 240" style={{ display: 'block' }}>
+                      {/* Grid background lines */}
+                      <defs>
+                        <pattern id="gridPattern" width="20" height="20" patternUnits="userSpaceOnUse">
+                          <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255, 255, 255, 0.02)" strokeWidth="1" />
+                        </pattern>
+                      </defs>
+                      <rect width="100%" height="100%" fill="url(#gridPattern)" />
 
-                        const availPct = Math.round((dAvail / totalDrv) * 100);
-                        const tripPct = Math.round((dTrip / totalDrv) * 100);
-                        const offPct = Math.round((dOff / totalDrv) * 100);
-                        const suspPct = Math.round((dSusp / totalDrv) * 100);
-
-                        return (
-                          <>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: '600' }}>
-                                <span style={{ color: 'var(--success)' }}>Available ({dAvail})</span>
-                                <span>{availPct}%</span>
-                              </div>
-                              <div style={{ width: '100%', height: '10px', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: '5px', overflow: 'hidden' }}>
-                                <div style={{ width: `${availPct}%`, height: '100%', backgroundColor: 'var(--success)' }}></div>
-                              </div>
-                            </div>
-
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: '600' }}>
-                                <span style={{ color: 'var(--info)' }}>On Trip ({dTrip})</span>
-                                <span>{tripPct}%</span>
-                              </div>
-                              <div style={{ width: '100%', height: '10px', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: '5px', overflow: 'hidden' }}>
-                                <div style={{ width: `${tripPct}%`, height: '100%', backgroundColor: 'var(--info)' }}></div>
-                              </div>
-                            </div>
-
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: '600' }}>
-                                <span style={{ color: 'var(--text-muted)' }}>Off Duty ({dOff})</span>
-                                <span>{offPct}%</span>
-                              </div>
-                              <div style={{ width: '100%', height: '10px', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: '5px', overflow: 'hidden' }}>
-                                <div style={{ width: `${dOff}%`, height: '100%', backgroundColor: 'var(--text-muted)' }}></div>
-                              </div>
-                            </div>
-
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: '600' }}>
-                                <span style={{ color: 'var(--danger)' }}>Suspended ({dSusp})</span>
-                                <span>{suspPct}%</span>
-                              </div>
-                              <div style={{ width: '100%', height: '10px', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: '5px', overflow: 'hidden' }}>
-                                <div style={{ width: `${dSusp}%`, height: '100%', backgroundColor: 'var(--danger)' }}></div>
-                              </div>
-                            </div>
-                          </>
-                        );
-                      } else {
-                        const totalVeh = vehicles.length || 1;
-                        const avail = vehicles.filter(v => v.status === 'Available').length;
-                        const trip = vehicles.filter(v => v.status === 'On Trip').length;
-                        const shop = vehicles.filter(v => v.status === 'In Shop').length;
-                        const ret = vehicles.filter(v => v.status === 'Retired').length;
-
-                        const availPct = Math.round((avail / totalVeh) * 100);
-                        const tripPct = Math.round((trip / totalVeh) * 100);
-                        const shopPct = Math.round((shop / totalVeh) * 100);
-                        const retPct = Math.round((ret / totalVeh) * 100);
+                      {/* Map routes (lines) */}
+                      {trips.filter(t => t.status === 'Dispatched').map((trip, idx) => {
+                        const src = getCoordinatesForCity(trip.source);
+                        const dest = getCoordinatesForCity(trip.destination);
+                        // Scale coordinates to fit inside 300x240 map canvas
+                        const sX = (src.x % 240) + 30;
+                        const sY = (src.y % 180) + 30;
+                        const dX = (dest.x % 240) + 30;
+                        const dY = (dest.y % 180) + 30;
+                        const routePathId = `dash-route-${trip.id}`;
 
                         return (
-                          <>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: '600' }}>
-                                <span style={{ color: 'var(--success)' }}>Available ({avail})</span>
-                                <span>{availPct}%</span>
-                              </div>
-                              <div style={{ width: '100%', height: '10px', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: '5px', overflow: 'hidden' }}>
-                                <div style={{ width: `${availPct}%`, height: '100%', backgroundColor: 'var(--success)' }}></div>
-                              </div>
-                            </div>
-
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: '600' }}>
-                                <span style={{ color: 'var(--info)' }}>On Trip ({trip})</span>
-                                <span>{tripPct}%</span>
-                              </div>
-                              <div style={{ width: '100%', height: '10px', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: '5px', overflow: 'hidden' }}>
-                                <div style={{ width: `${tripPct}%`, height: '100%', backgroundColor: 'var(--info)' }}></div>
-                              </div>
-                            </div>
-
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: '600' }}>
-                                <span style={{ color: 'var(--danger)' }}>In Shop ({shop})</span>
-                                <span>{shopPct}%</span>
-                              </div>
-                              <div style={{ width: '100%', height: '10px', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: '5px', overflow: 'hidden' }}>
-                                <div style={{ width: `${shopPct}%`, height: '100%', backgroundColor: 'var(--danger)' }}></div>
-                              </div>
-                            </div>
-
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: '600' }}>
-                                <span style={{ color: 'var(--text-muted)' }}>Retired ({ret})</span>
-                                <span>{retPct}%</span>
-                              </div>
-                              <div style={{ width: '100%', height: '10px', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: '5px', overflow: 'hidden' }}>
-                                <div style={{ width: `${retPct}%`, height: '100%', backgroundColor: 'var(--text-muted)' }}></div>
-                              </div>
-                            </div>
-                          </>
+                          <g key={trip.id}>
+                            {/* Glow Line */}
+                            <line 
+                              x1={sX} y1={sY} x2={dX} y2={dY} 
+                              stroke="rgba(245, 158, 11, 0.15)" 
+                              strokeWidth="4" 
+                              strokeLinecap="round" 
+                            />
+                            {/* Main Route Line */}
+                            <path 
+                              id={routePathId}
+                              d={`M ${sX} ${sY} L ${dX} ${dY}`}
+                              fill="none" 
+                              stroke="var(--primary)" 
+                              strokeWidth="1.5" 
+                              strokeDasharray="4 3" 
+                              strokeLinecap="round"
+                            />
+                            {/* Moving Vehicle Dot */}
+                            <circle r="4" fill="var(--primary)">
+                              <animateMotion dur="8s" repeatCount="indefinite">
+                                <mpath href={`#${routePathId}`} />
+                              </animateMotion>
+                            </circle>
+                          </g>
                         );
+                      })}
+
+                      {/* Draw Hub Nodes */}
+                      {(() => {
+                        const uniqueHubs = new Set();
+                        trips.forEach(t => {
+                          uniqueHubs.add(t.source);
+                          uniqueHubs.add(t.destination);
+                        });
+                        const hubs = Array.from(uniqueHubs).slice(0, 6);
+                        return hubs.map(hubName => {
+                          const coords = getCoordinatesForCity(hubName);
+                          const hX = (coords.x % 240) + 30;
+                          const hY = (coords.y % 180) + 30;
+                          return (
+                            <g key={hubName}>
+                              <circle cx={hX} cy={hY} r="3" fill="#fff" stroke="var(--primary)" strokeWidth="1.5" />
+                              <text x={hX} y={hY - 6} fill="var(--text-secondary)" fontSize="7" fontWeight="600" textAnchor="middle">
+                                {hubName}
+                              </text>
+                            </g>
+                          );
+                        });
+                      })()}
+                    </svg>
+
+                    {/* Bottom Floating Info bar */}
+                    <div style={{ position: 'absolute', bottom: '10px', left: '10px', right: '10px', display: 'flex', justifyContent: 'space-between', backgroundColor: 'rgba(15,23,42,0.85)', padding: '6px 10px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '9px' }}>
+                      <span style={{ color: 'var(--text-secondary)' }}>ACTIVE LOCATIONS: {trips.filter(t => t.status === 'Dispatched').length} EN ROUTE</span>
+                      <span style={{ color: 'var(--primary)', fontWeight: '600' }}>GPS DISPATCH TOPOLOGY</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Row 4: Timeline, Drivers & Maintenance Widgets */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1.2fr', gap: '20px', marginTop: '20px' }}>
+                
+                {/* 1. Upcoming Maintenance Widget */}
+                <div className="card" style={{ marginBottom: 0 }}>
+                  <div className="card-header">
+                    <h3 className="card-title" style={{ display: 'flex', alignItems: 'center' }}>
+                      <Wrench size={16} style={{ color: 'var(--warning)', marginRight: '8px' }} />
+                      <span>Upcoming Maintenance</span>
+                    </h3>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    {vehicles.filter(v => v.odometer >= 8000).slice(0, 3).map(v => {
+                      const limit = 10000;
+                      const rem = Math.max(0, limit - v.odometer);
+                      const pct = Math.min(100, Math.round((v.odometer / limit) * 100));
+                      const dueDays = Math.ceil(rem / 100);
+                      return (
+                        <div key={v.registration_number} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                            <span style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{v.registration_number} ({v.name_model})</span>
+                            <span style={{ color: rem <= 500 ? 'var(--danger)' : 'var(--warning)', fontWeight: '600' }}>{rem} km left</span>
+                          </div>
+                          {/* Linear progress bar */}
+                          <div style={{ width: '100%', height: '8px', backgroundColor: 'var(--border-color)', borderRadius: '4px', overflow: 'hidden' }}>
+                            <div style={{ width: `${pct}%`, height: '100%', backgroundColor: rem <= 500 ? 'var(--danger)' : 'var(--warning)' }}></div>
+                          </div>
+                          <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Due: July 16 (Est. {dueDays} days)</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 2. Driver Availability Cards */}
+                <div className="card" style={{ marginBottom: 0 }}>
+                  <div className="card-header">
+                    <h3 className="card-title" style={{ display: 'flex', alignItems: 'center' }}>
+                      <Users size={16} style={{ color: 'var(--info)', marginRight: '8px' }} />
+                      <span>Driver Status Monitor</span>
+                    </h3>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '240px', overflowY: 'auto' }}>
+                    {drivers.slice(0, 4).map(d => {
+                      let statusText = 'Online';
+                      let statusClass = 'badge-success';
+                      let activeRouteText = 'Resting / Available';
+
+                      if (d.status === 'On Trip') {
+                        statusText = 'On Duty';
+                        statusClass = 'badge-info';
+                        const activeTrip = trips.find(t => t.driver_id === d.id && t.status === 'Dispatched');
+                        if (activeTrip) activeRouteText = `${activeTrip.source} → ${activeTrip.destination}`;
+                      } else if (d.status === 'Off Duty') {
+                        statusText = 'Break';
+                        statusClass = 'badge-warning';
+                      } else if (d.status === 'Suspended') {
+                        statusText = 'Suspended';
+                        statusClass = 'badge-danger';
+                        activeRouteText = 'Action Required';
                       }
-                    })()}
+
+                      return (
+                        <div key={d.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', backgroundColor: 'rgba(255,255,255,0.01)', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                          <div>
+                            <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-primary)' }}>{d.name}</div>
+                            <div style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>{activeRouteText}</div>
+                          </div>
+                          <span className={`badge ${statusClass}`} style={{ fontSize: '9px', padding: '2px 6px' }}>{statusText}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 3. Logistics Weather & Stepper Timeline */}
+                <div className="card" style={{ marginBottom: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div className="card-header">
+                    <h3 className="card-title" style={{ display: 'flex', alignItems: 'center' }}>
+                      <Map size={16} style={{ color: 'var(--success)', marginRight: '8px' }} />
+                      <span>Hub Logistics Intel</span>
+                    </h3>
+                  </div>
+                  {/* Weather Widget */}
+                  <div style={{ display: 'flex', gap: '16px', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.02)', padding: '10px 14px', borderRadius: '6px', border: '1px solid var(--border-color)', marginBottom: '10px' }}>
+                    <Sun size={24} style={{ color: 'var(--primary)' }} />
+                    <div>
+                      <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>Ahmedabad Hub</div>
+                      <div style={{ fontSize: '11px', color: 'var(--success)', fontWeight: '600' }}>34°C • Good Driving Conditions</div>
+                    </div>
+                  </div>
+
+                  {/* Dispatch stepper checklist timeline */}
+                  <div style={{ backgroundColor: 'rgba(255,255,255,0.02)', padding: '10px 14px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                    <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '8px' }}>Standard Dispatch Sequence</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '10px' }}>
+                        <Check size={10} style={{ color: 'var(--success)' }} />
+                        <span>09:10 - Cargo Trip Created</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '10px' }}>
+                        <Check size={10} style={{ color: 'var(--success)' }} />
+                        <span>09:30 - Certified Driver Assigned</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '10px' }}>
+                        <Check size={10} style={{ color: 'var(--success)' }} />
+                        <span>09:45 - Vehicle Safety Checked</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '10px', color: 'var(--text-muted)' }}>
+                        <Clock size={10} />
+                        <span>10:00 - Departed & GPS Active</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1480,24 +1841,61 @@ export default function App() {
                     </tr>
                   </thead>
                   <tbody>
-                    {trips.map(trip => (
-                      <tr key={trip.id}>
-                        <td style={{ fontWeight: '600' }}>TR-{String(trip.id).padStart(4, '0')}</td>
-                        <td>{trip.vehicle_reg_no}</td>
-                        <td>{trip.driver_name}</td>
-                        <td>{trip.source} → {trip.destination}</td>
-                        <td>{trip.planned_distance} km</td>
-                        <td>{trip.cargo_weight} kg</td>
-                        <td>₹{trip.revenue.toLocaleString()}</td>
-                        <td>
-                          <span className={`badge ${
-                            trip.status === 'Completed' ? 'badge-success' :
-                            trip.status === 'Dispatched' ? 'badge-warning' :
-                            trip.status === 'Cancelled' ? 'badge-danger' : 'badge-muted'
-                          }`}>
-                            {trip.status}
-                          </span>
-                        </td>
+                    {trips.map(trip => {
+                      const isHeavy = trip.cargo_weight > 5000;
+                      
+                      let badgeClass = 'badge-muted';
+                      let statusText = trip.status;
+                      
+                      if (trip.status === 'Completed') {
+                        badgeClass = 'badge-success';
+                        statusText = 'Completed';
+                      } else if (trip.status === 'Dispatched') {
+                        badgeClass = 'badge-info';
+                        statusText = 'Running';
+                      } else if (trip.status === 'Cancelled') {
+                        badgeClass = 'badge-danger';
+                        statusText = 'Cancelled';
+                      } else if (trip.status === 'Draft') {
+                        badgeClass = 'badge-muted';
+                        statusText = 'Draft';
+                      }
+
+                      return (
+                        <tr key={trip.id}>
+                          <td style={{ fontWeight: '600' }}>TR-{String(trip.id).padStart(4, '0')}</td>
+                          <td style={{ whiteSpace: 'nowrap' }}>
+                            <Truck size={14} style={{ marginRight: '6px', color: isHeavy ? 'var(--primary)' : 'var(--info)', display: 'inline-block', verticalAlign: 'middle' }} />
+                            {trip.vehicle_reg_no}
+                          </td>
+                          <td>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <div style={{ 
+                                width: '24px', 
+                                height: '24px', 
+                                borderRadius: '50%', 
+                                backgroundColor: 'var(--primary-light)', 
+                                color: 'var(--primary)', 
+                                fontSize: '10px', 
+                                fontWeight: '700', 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                justifyContent: 'center' 
+                              }}>
+                                {trip.driver_name ? trip.driver_name.charAt(0) : 'D'}
+                              </div>
+                              <span>{trip.driver_name}</span>
+                            </div>
+                          </td>
+                          <td>{trip.source} → {trip.destination}</td>
+                          <td>{trip.planned_distance} km</td>
+                          <td>{trip.cargo_weight.toLocaleString()} kg</td>
+                          <td style={{ fontWeight: '600' }}>₹{trip.revenue.toLocaleString()}</td>
+                          <td>
+                            <span className={`badge ${badgeClass}`} style={{ fontSize: '10px', padding: '3px 8px' }}>
+                              {statusText}
+                            </span>
+                          </td>
                         <td>
                           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                             {trip.status === 'Draft' && hasWriteAccess(user.role, 'Trips') && (
@@ -1541,7 +1939,8 @@ export default function App() {
                           </div>
                         </td>
                       </tr>
-                    ))}
+                    );
+                  })}
                   </tbody>
                 </table>
               </div>

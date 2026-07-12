@@ -1628,137 +1628,47 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* 3. Right Dashboard Sidebar Column */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: 0 }}>
-                  
-                  {/* Weather & Stepper Timeline */}
-                  <div className="card" style={{ marginBottom: 0, padding: '16px' }}>
-                    <div className="card-header">
-                      <h3 className="card-title" style={{ display: 'flex', alignItems: 'center' }}>
-                        <Map size={16} style={{ color: 'var(--success)', marginRight: '8px' }} />
-                        <span>Hub Logistics Intel</span>
-                      </h3>
-                    </div>
-                    {/* Weather Widget */}
-                    {(() => {
-                      const latestTrip = trips[trips.length - 1];
-                      let cityName = 'Ahmedabad Hub';
-                      let temp = 34;
-                      let conditions = 'Good Driving Conditions';
-                      
-                      if (latestTrip) {
-                        cityName = getShortAddressName(latestTrip.source);
-                        let hash = 0;
-                        for (let i = 0; i < latestTrip.source.length; i++) {
-                          hash = latestTrip.source.charCodeAt(i) + ((hash << 5) - hash);
-                        }
-                        temp = 24 + (Math.abs(hash) % 12);
-                        conditions = (Math.abs(hash) % 3 === 0) ? 'Clear • Perfect Visibility' : (Math.abs(hash) % 3 === 1) ? 'Overcast • Good Conditions' : 'Slight Rain • Reduce Speed';
-                      }
-
-                      return (
-                        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.02)', padding: '10px 14px', borderRadius: '6px', border: '1px solid var(--border-color)', marginBottom: '10px' }}>
-                          <Sun size={24} style={{ color: 'var(--primary)' }} />
-                          <div>
-                            <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>{cityName}</div>
-                            <div style={{ fontSize: '11px', color: temp > 30 ? 'var(--warning)' : 'var(--success)', fontWeight: '600' }}>{temp}°C • {conditions}</div>
-                          </div>
-                        </div>
-                      );
-                    })()}
-
-                    {/* Dispatch stepper checklist timeline */}
-                    {(() => {
-                      const latestTrip = trips[trips.length - 1];
-                      if (!latestTrip) {
-                        return (
-                          <div style={{ backgroundColor: 'rgba(255,255,255,0.02)', padding: '10px 14px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
-                            <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '8px' }}>Standard Dispatch Sequence</div>
-                            <div style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>No active dispatches logged.</div>
-                          </div>
-                        );
-                      }
-
-                      const formatTime = (isoString, offsetMins = 0) => {
-                        try {
-                          const d = new Date(isoString.replace(' ', 'T'));
-                          if (isNaN(d.getTime())) return '09:00';
-                          d.setMinutes(d.getMinutes() + offsetMins);
-                          return d.toTimeString().split(' ')[0].substring(0, 5);
-                        } catch(e) {
-                          return '09:00';
-                        }
-                      };
-
-                      const time1 = formatTime(latestTrip.created_at || '2026-07-12 09:00:00', 0);
-                      const time2 = formatTime(latestTrip.created_at || '2026-07-12 09:00:00', 15);
-                      const time3 = formatTime(latestTrip.created_at || '2026-07-12 09:00:00', 30);
-                      const time4 = formatTime(latestTrip.created_at || '2026-07-12 09:00:00', 45);
-
-                      const isAssigned = !!latestTrip.driver_id;
-                      const isDispatched = latestTrip.status === 'Dispatched' || latestTrip.status === 'Completed';
-                      const isCompleted = latestTrip.status === 'Completed';
-
-                      return (
-                        <div style={{ backgroundColor: 'rgba(255,255,255,0.02)', padding: '10px 14px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                            <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-primary)' }}>Trip TR-{String(latestTrip.id).padStart(4, '0')} Telemetry</span>
-                            <span className={`badge ${latestTrip.status === 'Completed' ? 'badge-success' : latestTrip.status === 'Dispatched' ? 'badge-info' : 'badge-muted'}`} style={{ fontSize: '8px', padding: '1px 4px' }}>
-                              {latestTrip.status}
-                            </span>
-                          </div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '10px' }}>
-                              <Check size={10} style={{ color: 'var(--success)' }} />
-                              <span>{time1} - Cargo Trip Created</span>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '10px' }}>
-                              {isAssigned ? (
-                                <Check size={10} style={{ color: 'var(--success)' }} />
-                              ) : (
-                                <Clock size={10} style={{ color: 'var(--text-muted)' }} />
-                              )}
-                              <span style={{ color: isAssigned ? 'var(--text-primary)' : 'var(--text-muted)' }}>
-                                {time2} - Driver Assigned ({latestTrip.driver_name || 'Pending'})
-                              </span>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '10px' }}>
-                              {isDispatched ? (
-                                <Check size={10} style={{ color: 'var(--success)' }} />
-                              ) : (
-                                <Clock size={10} style={{ color: 'var(--text-muted)' }} />
-                              )}
-                              <span style={{ color: isDispatched ? 'var(--text-primary)' : 'var(--text-muted)' }}>
-                                {time3} - Safety Clearance Checked
-                              </span>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '10px' }}>
-                              {isCompleted ? (
-                                <Check size={10} style={{ color: 'var(--success)' }} />
-                              ) : isDispatched ? (
-                                <div className="pulse-dot" style={{ width: '6px', height: '6px', backgroundColor: 'var(--primary)', borderRadius: '50%', display: 'inline-block' }}></div>
-                              ) : (
-                                <Clock size={10} style={{ color: 'var(--text-muted)' }} />
-                              )}
-                              <span style={{ color: isDispatched ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: isDispatched && !isCompleted ? '600' : 'normal', marginLeft: isDispatched && !isCompleted ? '4px' : '0' }}>
-                                {time4} - {isCompleted ? 'Completed & Handed Over' : isDispatched ? 'Transit Active (GPS Live)' : 'Awaiting Dispatch'}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })()}
+                {/* 3. Right Dashboard Sidebar Column (Hub Logistics Intel) */}
+                <div className="card" style={{ marginBottom: 0, padding: '16px', display: 'flex', flexDirection: 'column', height: '100%' }}>
+                  <div className="card-header" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '8px', marginBottom: '10px' }}>
+                    <h3 className="card-title" style={{ display: 'flex', alignItems: 'center' }}>
+                      <Map size={16} style={{ color: 'var(--success)', marginRight: '8px' }} />
+                      <span>Hub Logistics Intel</span>
+                    </h3>
                   </div>
 
-                  {/* Live Operations Feed Card */}
-                  <div className="card" style={{ marginBottom: 0, padding: '16px', display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
-                    <div className="card-header" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '8px', marginBottom: '10px' }}>
-                      <h3 className="card-title" style={{ display: 'flex', alignItems: 'center' }}>
-                        <Activity size={16} style={{ color: 'var(--primary)', marginRight: '8px' }} />
-                        <span>Live Operations Feed</span>
-                      </h3>
-                    </div>
-                    <div className="operations-feed-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px', overflowY: 'auto', maxHeight: '160px', paddingRight: '4px' }}>
+                  {/* Weather Widget */}
+                  {(() => {
+                    const latestTrip = trips[trips.length - 1];
+                    let cityName = 'Ahmedabad Hub';
+                    let temp = 34;
+                    let conditions = 'Good Driving Conditions';
+                    
+                    if (latestTrip) {
+                      cityName = getShortAddressName(latestTrip.source);
+                      let hash = 0;
+                      for (let i = 0; i < latestTrip.source.length; i++) {
+                        hash = latestTrip.source.charCodeAt(i) + ((hash << 5) - hash);
+                      }
+                      temp = 24 + (Math.abs(hash) % 12);
+                      conditions = (Math.abs(hash) % 3 === 0) ? 'Clear • Perfect Visibility' : (Math.abs(hash) % 3 === 1) ? 'Overcast • Good Conditions' : 'Slight Rain • Reduce Speed';
+                    }
+
+                    return (
+                      <div style={{ display: 'flex', gap: '16px', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.02)', padding: '10px 14px', borderRadius: '6px', border: '1px solid var(--border-color)', marginBottom: '14px' }}>
+                        <Sun size={24} style={{ color: 'var(--primary)' }} />
+                        <div>
+                          <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>{cityName}</div>
+                          <div style={{ fontSize: '11px', color: temp > 30 ? 'var(--warning)' : 'var(--success)', fontWeight: '600' }}>{temp}°C • {conditions}</div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Dynamic Operations Log Feed */}
+                  <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Live Operations Feed</div>
+                    <div className="operations-feed-list" style={{ display: 'flex', flexDirection: 'column', gap: '10px', overflowY: 'auto', maxHeight: '140px', paddingRight: '4px' }}>
                       {(() => {
                         const feedLogs = [];
                         

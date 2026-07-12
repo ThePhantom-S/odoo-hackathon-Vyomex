@@ -74,6 +74,34 @@ const renderStatusPill = (status) => {
   );
 };
 
+// Helper to render vehicle status pills
+const renderVehicleStatusPill = (status) => {
+  let badgeClass = 'badge-muted';
+  let dotColor = '#94a3b8';
+  let text = 'RETIRED';
+
+  if (status === 'Available') {
+    badgeClass = 'badge-success';
+    dotColor = 'var(--success)';
+    text = 'AVAILABLE';
+  } else if (status === 'On Trip') {
+    badgeClass = 'badge-info';
+    dotColor = 'var(--info)';
+    text = 'ON TRIP';
+  } else if (status === 'In Shop') {
+    badgeClass = 'badge-danger';
+    dotColor = 'var(--danger)';
+    text = 'IN SHOP';
+  }
+
+  return (
+    <span className={`badge ${badgeClass}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '9px', padding: '3px 8px', letterSpacing: '0.5px' }}>
+      <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: dotColor, display: 'inline-block' }}></span>
+      {text}
+    </span>
+  );
+};
+
 // Live Logistics Map component using Leaflet dynamically
 function LiveLogisticsMap({ trips, darkMode }) {
   const mapRef = React.useRef(null);
@@ -1842,10 +1870,17 @@ export default function App() {
                       })
                       .map(v => (
                         <tr key={v.registration_number}>
-                          <td style={{ fontWeight: '600' }}>{v.registration_number}</td>
+                          <td style={{ fontWeight: '600', whiteSpace: 'nowrap' }}>
+                            <Truck size={14} style={{ marginRight: '6px', color: 'var(--primary)', display: 'inline-block', verticalAlign: 'middle' }} />
+                            <span>{v.registration_number}</span>
+                          </td>
                           <td>{v.name_model}</td>
-                          <td>{v.type}</td>
-                          <td>{v.max_load_capacity} kg</td>
+                          <td>
+                            <span className="badge badge-muted" style={{ textTransform: 'uppercase', fontSize: '9px', padding: '2px 6px' }}>
+                              {v.type}
+                            </span>
+                          </td>
+                          <td>{v.max_load_capacity.toLocaleString()} kg</td>
                           <td>
                              <div>{v.odometer.toLocaleString()} km</div>
                              {v.odometer >= 10000 && v.status === 'Available' && (
@@ -1867,15 +1902,7 @@ export default function App() {
                              )}
                            </td>
                           <td>₹{v.acquisition_cost.toLocaleString()}</td>
-                          <td>
-                            <span className={`badge ${
-                              v.status === 'Available' ? 'badge-success' :
-                              v.status === 'On Trip' ? 'badge-warning' :
-                              v.status === 'In Shop' ? 'badge-danger' : 'badge-muted'
-                            }`}>
-                              {v.status}
-                            </span>
-                          </td>
+                          <td>{renderVehicleStatusPill(v.status)}</td>
                           {hasWriteAccess(user.role, 'Fleet') && (
                             <td>
                               <div style={{ display: 'flex', gap: '8px' }}>

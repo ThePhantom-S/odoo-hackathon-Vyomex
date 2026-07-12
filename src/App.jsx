@@ -58,6 +58,18 @@ const splitAddress = (address) => {
   };
 };
 
+const closeWithTransition = (stateSetter) => {
+  const overlay = document.querySelector('.modal-overlay:not(.closing)');
+  if (overlay) {
+    overlay.classList.add('closing');
+    setTimeout(() => {
+      stateSetter();
+    }, 200);
+  } else {
+    stateSetter();
+  }
+};
+
 // Helper to render premium status badges
 const renderStatusPill = (status) => {
   let badgeClass = 'badge-muted';
@@ -631,6 +643,20 @@ export default function App() {
       root.classList.add('light-mode');
     }
   }, [darkMode]);
+
+  // Close notification panel when clicking outside
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      const dropdown = document.querySelector('.notifications-dropdown');
+      if (notifPanelOpen && dropdown && !dropdown.contains(e.target) && !e.target.closest('button')?.title?.includes('Compliance')) {
+        setNotifPanelOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+    };
+  }, [notifPanelOpen]);
 
   const fetchUser = async () => {
     try {
@@ -1433,6 +1459,7 @@ export default function App() {
                   onClick={() => {
                     setActiveTab(tab.name);
                     setSidebarOpen(false);
+                    setNotifPanelOpen(false);
                   }}
                 >
                   <Icon size={18} style={{ marginRight: '10px' }} />
@@ -1506,81 +1533,82 @@ export default function App() {
               </button>
 
               {/* Dropdown Alerts Panel */}
-              {notifPanelOpen && (
-                <div className="notifications-dropdown" style={{ width: '340px', padding: '16px', maxHeight: '420px', overflowY: 'auto' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <ShieldAlert size={14} style={{ color: notificationAlerts.length > 0 ? 'var(--danger)' : 'var(--success)' }} />
-                      <span style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-primary)', fontFamily: 'var(--font-display)', letterSpacing: '0.3px' }}>System Compliance Alerts</span>
-                    </div>
-                    <span className="badge" style={{ backgroundColor: notificationAlerts.length > 0 ? 'var(--danger-bg)' : 'var(--success-bg)', color: notificationAlerts.length > 0 ? 'var(--danger)' : 'var(--success)', fontSize: '10px', padding: '2px 8px', borderRadius: '10px', fontWeight: '700' }}>
-                      {notificationAlerts.length} Active
-                    </span>
+              <div 
+                className={`notifications-dropdown ${notifPanelOpen ? 'show' : ''}`} 
+                style={{ width: '340px', padding: '16px', maxHeight: '420px', overflowY: 'auto' }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <ShieldAlert size={14} style={{ color: notificationAlerts.length > 0 ? 'var(--danger)' : 'var(--success)' }} />
+                    <span style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-primary)', fontFamily: 'var(--font-display)', letterSpacing: '0.3px' }}>System Compliance Alerts</span>
                   </div>
-                  
-                  {notificationAlerts.length === 0 ? (
-                    <div style={{ padding: '24px 0', color: 'var(--text-secondary)', fontSize: '12px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                      <Check size={24} style={{ color: 'var(--success)' }} />
-                      <span>All operating systems compliant. No active alerts.</span>
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      {notificationAlerts.map(alert => {
-                        const isDanger = alert.type === 'danger';
-                        const isWarning = alert.type === 'warning';
-                        
-                        let itemBg = 'rgba(59, 130, 246, 0.04)';
-                        let itemBorder = 'var(--info)';
-                        if (isDanger) {
-                          itemBg = 'rgba(239, 68, 68, 0.04)';
-                          itemBorder = 'var(--danger)';
-                        } else if (isWarning) {
-                          itemBg = 'rgba(245, 158, 11, 0.04)';
-                          itemBorder = 'var(--warning)';
-                        }
-
-                        return (
-                          <div 
-                            key={alert.id} 
-                            style={{ 
-                              padding: '12px', 
-                              borderRadius: '8px', 
-                              borderLeft: `4px solid ${itemBorder}`,
-                              backgroundColor: itemBg,
-                              borderTop: '1px solid rgba(255,255,255,0.01)',
-                              borderRight: '1px solid rgba(255,255,255,0.01)',
-                              borderBottom: '1px solid rgba(255,255,255,0.01)',
-                              display: 'flex',
-                              gap: '10px',
-                              alignItems: 'flex-start',
-                              transition: 'transform 0.15s ease'
-                            }}
-                          >
-                            <div style={{ marginTop: '2px' }}>
-                              {isDanger ? (
-                                <AlertTriangle size={14} style={{ color: 'var(--danger)' }} />
-                              ) : isWarning ? (
-                                <ShieldAlert size={14} style={{ color: 'var(--warning)' }} />
-                              ) : (
-                                <Activity size={14} style={{ color: 'var(--info)' }} />
-                              )}
-                            </div>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontWeight: '600', color: 'var(--text-primary)', fontSize: '11.5px', marginBottom: '2px' }}>{alert.title}</div>
-                              <div style={{ color: 'var(--text-secondary)', fontSize: '11px', lineHeight: '1.4' }}>{alert.message}</div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '9px', color: notificationAlerts.length > 0 ? 'var(--warning)' : 'var(--success)', borderTop: '1px solid var(--border-color)', paddingTop: '10px', marginTop: '14px', justifyContent: 'center', letterSpacing: '0.5px', fontWeight: '700' }}>
-                    <Activity size={10} className="pulse-dot" style={{ backgroundColor: 'transparent', display: 'inline-block' }} />
-                    <span>COMPLIANCE MONITOR ACTIVE</span>
-                  </div>
+                  <span className="badge" style={{ backgroundColor: notificationAlerts.length > 0 ? 'var(--danger-bg)' : 'var(--success-bg)', color: notificationAlerts.length > 0 ? 'var(--danger)' : 'var(--success)', fontSize: '10px', padding: '2px 8px', borderRadius: '10px', fontWeight: '700' }}>
+                    {notificationAlerts.length} Active
+                  </span>
                 </div>
-              )}
+                
+                {notificationAlerts.length === 0 ? (
+                  <div style={{ padding: '24px 0', color: 'var(--text-secondary)', fontSize: '12px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                    <Check size={24} style={{ color: 'var(--success)' }} />
+                    <span>All operating systems compliant. No active alerts.</span>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {notificationAlerts.map(alert => {
+                      const isDanger = alert.type === 'danger';
+                      const isWarning = alert.type === 'warning';
+                      
+                      let itemBg = 'rgba(59, 130, 246, 0.04)';
+                      let itemBorder = 'var(--info)';
+                      if (isDanger) {
+                        itemBg = 'rgba(239, 68, 68, 0.04)';
+                        itemBorder = 'var(--danger)';
+                      } else if (isWarning) {
+                        itemBg = 'rgba(245, 158, 11, 0.04)';
+                        itemBorder = 'var(--warning)';
+                      }
+
+                      return (
+                        <div 
+                          key={alert.id} 
+                          style={{ 
+                            padding: '12px', 
+                            borderRadius: '8px', 
+                            borderLeft: `4px solid ${itemBorder}`,
+                            backgroundColor: itemBg,
+                            borderTop: '1px solid rgba(255,255,255,0.01)',
+                            borderRight: '1px solid rgba(255,255,255,0.01)',
+                            borderBottom: '1px solid rgba(255,255,255,0.01)',
+                            display: 'flex',
+                            gap: '10px',
+                            alignItems: 'flex-start',
+                            transition: 'transform 0.15s ease'
+                          }}
+                        >
+                          <div style={{ marginTop: '2px' }}>
+                            {isDanger ? (
+                              <AlertTriangle size={14} style={{ color: 'var(--danger)' }} />
+                            ) : isWarning ? (
+                              <ShieldAlert size={14} style={{ color: 'var(--warning)' }} />
+                            ) : (
+                              <Activity size={14} style={{ color: 'var(--info)' }} />
+                            )}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontWeight: '600', color: 'var(--text-primary)', fontSize: '11.5px', marginBottom: '2px' }}>{alert.title}</div>
+                            <div style={{ color: 'var(--text-secondary)', fontSize: '11px', lineHeight: '1.4' }}>{alert.message}</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '9px', color: notificationAlerts.length > 0 ? 'var(--warning)' : 'var(--success)', borderTop: '1px solid var(--border-color)', paddingTop: '10px', marginTop: '14px', justifyContent: 'center', letterSpacing: '0.5px', fontWeight: '700' }}>
+                  <Activity size={10} className="pulse-dot" style={{ backgroundColor: 'transparent', display: 'inline-block' }} />
+                  <span>COMPLIANCE MONITOR ACTIVE</span>
+                </div>
+              </div>
             </div>
 
             <div className="user-info">
@@ -3218,11 +3246,11 @@ export default function App() {
 
           {/* 1. Vehicle Form Modal */}
           {vehicleModal && (
-            <div className="modal-overlay" onClick={() => setVehicleModal(false)}>
+            <div className="modal-overlay" onClick={() => closeWithTransition(() => setVehicleModal(false))}>
               <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
                   <h3 className="modal-title">{selectedVehicle ? 'Update Vehicle' : 'Register New Vehicle'}</h3>
-                  <button className="modal-close" onClick={() => setVehicleModal(false)}><X size={20} /></button>
+                  <button className="modal-close" onClick={() => closeWithTransition(() => setVehicleModal(false))}><X size={20} /></button>
                 </div>
                 <form onSubmit={handleVehicleSubmit}>
                   <div className="form-group">
@@ -3317,7 +3345,7 @@ export default function App() {
                     />
                   </div>
                   <div className="modal-footer">
-                    <button type="button" className="btn btn-secondary" onClick={() => setVehicleModal(false)}>Cancel</button>
+                    <button type="button" className="btn btn-secondary" onClick={() => closeWithTransition(() => setVehicleModal(false))}>Cancel</button>
                     <button type="submit" className="btn btn-primary">Save Vehicle</button>
                   </div>
                 </form>
@@ -3327,11 +3355,11 @@ export default function App() {
 
           {/* 2. Driver Form Modal */}
           {driverModal && (
-            <div className="modal-overlay" onClick={() => setDriverModal(false)}>
+            <div className="modal-overlay" onClick={() => closeWithTransition(() => setDriverModal(false))}>
               <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
                   <h3 className="modal-title">{selectedDriver ? 'Update Driver Profile' : 'Register Driver Profile'}</h3>
-                  <button className="modal-close" onClick={() => setDriverModal(false)}><X size={20} /></button>
+                  <button className="modal-close" onClick={() => closeWithTransition(() => setDriverModal(false))}><X size={20} /></button>
                 </div>
                 <form onSubmit={handleDriverSubmit}>
                   <div className="form-group">
@@ -3428,7 +3456,7 @@ export default function App() {
                     </div>
                   </div>
                   <div className="modal-footer">
-                    <button type="button" className="btn btn-secondary" onClick={() => setDriverModal(false)}>Cancel</button>
+                    <button type="button" className="btn btn-secondary" onClick={() => closeWithTransition(() => setDriverModal(false))}>Cancel</button>
                     <button type="submit" className="btn btn-primary">Save Driver</button>
                   </div>
                 </form>
@@ -3438,11 +3466,11 @@ export default function App() {
 
           {/* 3. Trip Planner Modal */}
           {tripModal && (
-            <div className="modal-overlay" onClick={() => setTripModal(false)}>
+            <div className="modal-overlay" onClick={() => closeWithTransition(() => setTripModal(false))}>
               <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
                   <h3 className="modal-title">Plan Cargo Trip</h3>
-                  <button className="modal-close" onClick={() => setTripModal(false)}><X size={20} /></button>
+                  <button className="modal-close" onClick={() => closeWithTransition(() => setTripModal(false))}><X size={20} /></button>
                 </div>
                 <form onSubmit={handleTripCreate}>
                   <div className="form-row">
@@ -3532,7 +3560,7 @@ export default function App() {
                   </div>
 
                   <div className="modal-footer">
-                    <button type="button" className="btn btn-secondary" onClick={() => setTripModal(false)}>Cancel</button>
+                    <button type="button" className="btn btn-secondary" onClick={() => closeWithTransition(() => setTripModal(false))}>Cancel</button>
                     <button type="submit" className="btn btn-primary">Create Draft Trip</button>
                   </div>
                 </form>
@@ -3542,11 +3570,11 @@ export default function App() {
 
           {/* 4. Complete Trip Modal */}
           {completeTripModal && (
-            <div className="modal-overlay" onClick={() => setCompleteTripModal(null)}>
+            <div className="modal-overlay" onClick={() => closeWithTransition(() => setCompleteTripModal(null))}>
               <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
                   <h3 className="modal-title">Complete Trip TR-{String(completeTripModal.id).padStart(4, '0')}</h3>
-                  <button className="modal-close" onClick={() => setCompleteTripModal(null)}><X size={20} /></button>
+                  <button className="modal-close" onClick={() => closeWithTransition(() => setCompleteTripModal(null))}><X size={20} /></button>
                 </div>
                 <form onSubmit={handleTripComplete}>
                   <div className="form-group">
@@ -3591,7 +3619,7 @@ export default function App() {
                   </div>
 
                   <div className="modal-footer">
-                    <button type="button" className="btn btn-secondary" onClick={() => setCompleteTripModal(null)}>Cancel</button>
+                    <button type="button" className="btn btn-secondary" onClick={() => closeWithTransition(() => setCompleteTripModal(null))}>Cancel</button>
                     <button type="submit" className="btn btn-primary">Complete Trip</button>
                   </div>
                 </form>
@@ -3601,11 +3629,11 @@ export default function App() {
 
           {/* 5. Maintenance Form Modal */}
           {maintModal && (
-            <div className="modal-overlay" onClick={() => setMaintModal(false)}>
+            <div className="modal-overlay" onClick={() => closeWithTransition(() => setMaintModal(false))}>
               <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
                   <h3 className="modal-title">Log Service Record</h3>
-                  <button className="modal-close" onClick={() => setMaintModal(false)}><X size={20} /></button>
+                  <button className="modal-close" onClick={() => closeWithTransition(() => setMaintModal(false))}><X size={20} /></button>
                 </div>
                 <form onSubmit={handleMaintSubmit}>
                   <div className="form-group">
@@ -3644,7 +3672,7 @@ export default function App() {
                   </div>
 
                   <div className="modal-footer">
-                    <button type="button" className="btn btn-secondary" onClick={() => setMaintModal(false)}>Cancel</button>
+                    <button type="button" className="btn btn-secondary" onClick={() => closeWithTransition(() => setMaintModal(false))}>Cancel</button>
                     <button type="submit" className="btn btn-primary">Log Service Record</button>
                   </div>
                 </form>
@@ -3654,11 +3682,11 @@ export default function App() {
 
           {/* 6. Fuel Log Form Modal */}
           {fuelModal && (
-            <div className="modal-overlay" onClick={() => setFuelModal(false)}>
+            <div className="modal-overlay" onClick={() => closeWithTransition(() => setFuelModal(false))}>
               <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
                   <h3 className="modal-title">Record Fuel Purchase</h3>
-                  <button className="modal-close" onClick={() => setFuelModal(false)}><X size={20} /></button>
+                  <button className="modal-close" onClick={() => closeWithTransition(() => setFuelModal(false))}><X size={20} /></button>
                 </div>
                 <form onSubmit={handleFuelSubmit}>
                   <div className="form-group">
@@ -3692,7 +3720,7 @@ export default function App() {
                   </div>
 
                   <div className="modal-footer">
-                    <button type="button" className="btn btn-secondary" onClick={() => setFuelModal(false)}>Cancel</button>
+                    <button type="button" className="btn btn-secondary" onClick={() => closeWithTransition(() => setFuelModal(false))}>Cancel</button>
                     <button type="submit" className="btn btn-primary">Save Fuel Log</button>
                   </div>
                 </form>
@@ -3702,11 +3730,11 @@ export default function App() {
 
           {/* 7. Expense Form Modal */}
           {expenseModal && (
-            <div className="modal-overlay" onClick={() => setExpenseModal(false)}>
+            <div className="modal-overlay" onClick={() => closeWithTransition(() => setExpenseModal(false))}>
               <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
                   <h3 className="modal-title">Log Operational Expense</h3>
-                  <button className="modal-close" onClick={() => setExpenseModal(false)}><X size={20} /></button>
+                  <button className="modal-close" onClick={() => closeWithTransition(() => setExpenseModal(false))}><X size={20} /></button>
                 </div>
                 <form onSubmit={handleExpenseSubmit}>
                   <div className="form-group">
@@ -3772,7 +3800,7 @@ export default function App() {
                   </div>
 
                   <div className="modal-footer">
-                    <button type="button" className="btn btn-secondary" onClick={() => setExpenseModal(false)}>Cancel</button>
+                    <button type="button" className="btn btn-secondary" onClick={() => closeWithTransition(() => setExpenseModal(false))}>Cancel</button>
                     <button type="submit" className="btn btn-primary">Save Expense</button>
                   </div>
                 </form>
@@ -3781,26 +3809,26 @@ export default function App() {
           )}
           {/* 8. Custom Confirmation Dialog Modal */}
           {confirmModal.open && (
-            <div className="modal-overlay" onClick={() => setConfirmModal({ ...confirmModal, open: false })}>
+            <div className="modal-overlay" onClick={() => closeWithTransition(() => setConfirmModal({ ...confirmModal, open: false }))}>
               <div className="modal-content" style={{ maxWidth: '420px' }} onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
                   <h3 className="modal-title" style={{ color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <ShieldAlert size={20} />
                     <span>{confirmModal.title}</span>
                   </h3>
-                  <button className="modal-close" onClick={() => setConfirmModal({ ...confirmModal, open: false })}><X size={20} /></button>
+                  <button className="modal-close" onClick={() => closeWithTransition(() => setConfirmModal({ ...confirmModal, open: false }))}><X size={20} /></button>
                 </div>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.5', marginBottom: '24px' }}>
                   {confirmModal.message}
                 </p>
                 <div className="modal-footer" style={{ marginTop: 0 }}>
-                  <button type="button" className="btn btn-secondary" onClick={() => setConfirmModal({ ...confirmModal, open: false })}>Cancel</button>
+                  <button type="button" className="btn btn-secondary" onClick={() => closeWithTransition(() => setConfirmModal({ ...confirmModal, open: false }))}>Cancel</button>
                   <button 
                     type="button" 
                     className="btn btn-danger" 
                     onClick={() => {
                       if (confirmModal.onConfirm) confirmModal.onConfirm();
-                      setConfirmModal({ ...confirmModal, open: false });
+                      closeWithTransition(() => setConfirmModal({ ...confirmModal, open: false }));
                     }}
                   >
                     Confirm Deletion
@@ -3816,14 +3844,14 @@ export default function App() {
             const dest = getCoordinatesForCity(getShortAddressName(trackingTrip.destination));
 
             return (
-              <div className="modal-overlay" onClick={() => setTrackingTrip(null)}>
+              <div className="modal-overlay" onClick={() => closeWithTransition(() => setTrackingTrip(null))}>
                 <div className="modal-content" style={{ maxWidth: '600px' }} onClick={(e) => e.stopPropagation()}>
                   <div className="modal-header">
                     <h3 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <Map size={20} style={{ color: 'var(--primary)' }} />
                       <span>Live Dispatch Route: TR-{String(trackingTrip.id).padStart(4, '0')}</span>
                     </h3>
-                    <button className="modal-close" onClick={() => setTrackingTrip(null)}><X size={20} /></button>
+                    <button className="modal-close" onClick={() => closeWithTransition(() => setTrackingTrip(null))}><X size={20} /></button>
                   </div>
                   
                   {(() => {
@@ -3942,7 +3970,7 @@ export default function App() {
                   </div>
 
                   <div className="modal-footer" style={{ marginTop: '20px' }}>
-                    <button type="button" className="btn btn-secondary" onClick={() => setTrackingTrip(null)}>Close Tracker</button>
+                    <button type="button" className="btn btn-secondary" onClick={() => closeWithTransition(() => setTrackingTrip(null))}>Close Tracker</button>
                   </div>
                 </div>
               </div>

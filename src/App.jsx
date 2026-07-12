@@ -9,6 +9,7 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, 
   Tooltip, Legend, LineChart, Line, Cell, CartesianGrid, PieChart, Pie, AreaChart, Area
 } from 'recharts';
+import * as THREE from 'three';
 
 // Utility to get coordinates for a city
 const getCoordinatesForCity = (cityName) => {
@@ -276,6 +277,213 @@ function CustomSelect({ options, value, onChange, placeholder = 'Select option',
 }
 
 const API_BASE = '/api';
+
+// 3D WebGL Logistics Globe Background Component
+function ThreeLogisticsGlobe() {
+  const containerRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (!containerRef.current) return;
+
+    const container = containerRef.current;
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+
+    // Create Scene, Camera, Renderer
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
+    camera.position.z = 220;
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.appendChild(renderer.domElement);
+
+    // Create Group for the Globe
+    const globeGroup = new THREE.Group();
+    scene.add(globeGroup);
+
+    // 1. Create a wireframe sphere representing the globe grid
+    const sphereGeom = new THREE.SphereGeometry(90, 24, 24);
+    const sphereMat = new THREE.MeshBasicMaterial({
+      color: 0xf59e0b,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.08
+    });
+    const globeGrid = new THREE.Mesh(sphereGeom, sphereMat);
+    globeGroup.add(globeGrid);
+
+    // 2. Create nodes (warehouse points)
+    const pointsCount = 35;
+    const pointsGeom = new THREE.BufferGeometry();
+    const positions = new Float32Array(pointsCount * 3);
+    const nodeCoords = [];
+
+    for (let i = 0; i < pointsCount; i++) {
+      // Uniform distribution on sphere
+      const u = Math.random();
+      const v = Math.random();
+      const theta = u * 2.0 * Math.PI;
+      const phi = Math.acos(2.0 * v - 1.0);
+      const r = 90;
+
+      const x = r * Math.sin(phi) * Math.cos(theta);
+      const y = r * Math.sin(phi) * Math.sin(theta);
+      const z = r * Math.cos(phi);
+
+      positions[i * 3] = x;
+      positions[i * 3 + 1] = y;
+      positions[i * 3 + 2] = z;
+
+      nodeCoords.push(new THREE.Vector3(x, y, z));
+    }
+
+    pointsGeom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const pointsMat = new THREE.PointsMaterial({
+      color: 0xf59e0b,
+      size: 4,
+      transparent: true,
+      opacity: 0.7
+    });
+    const points = new THREE.Points(pointsGeom, pointsMat);
+    globeGroup.add(points);
+
+    // 3. Create connecting bezier curves (logistics paths)
+    const linesGroup = new THREE.Group();
+    globeGroup.add(linesGroup);
+
+    const connectionsCount = 20;
+    const curveMaterials = [];
+    const curveMeshes = [];
+
+    for (let i = 0; i < connectionsCount; i++) {
+      // Pick two random nodes
+      const startNode = nodeCoords[Math.floor(Math.random() * pointsCount)];
+      const endNode = nodeCoords[Math.floor(Math.random() * pointsCount)];
+
+      if (startNode === endNode) continue;
+
+      // Calculate midpoint and pull it outward to create an arc
+      const mid = new THREE.Vector3().addVectors(startNode, endNode).multiplyScalar(0.5);
+      const dist = startNode.distanceTo(endNode);
+      mid.normalize().multiplyScalar(90 + dist * 0.25); // pull outward
+
+      // Create quadratic bezier curve
+      const curve = new THREE.QuadraticBezierCurve3(startNode, mid, endNode);
+      const curvePoints = curve.getPoints(30);
+      const curveGeom = new THREE.BufferGeometry().setFromPoints(curvePoints);
+
+      const isBlue = Math.random() > 0.5;
+      const mat = new THREE.LineBasicMaterial({
+        color: isBlue ? 0x3b82f6 : 0xf59e0b,
+        transparent: true,
+        opacity: 0.25
+      });
+      const line = new THREE.Line(curveGeom, mat);
+      linesGroup.add(line);
+
+      curveMeshes.push(line);
+      curveMaterials.push(mat);
+    }
+
+    // 4. Create floating light particles (dispatches en route)
+    const particleCount = 100;
+    const particleGeom = new THREE.BufferGeometry();
+    const particlePositions = new Float32Array(particleCount * 3);
+    const particleSpeeds = [];
+
+    for (let i = 0; i < particleCount; i++) {
+      // Scatter in space around the globe
+      const r = 120 + Math.random() * 80;
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(Math.random() * 2 - 1);
+
+      particlePositions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+      particlePositions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+      particlePositions[i * 3 + 2] = r * Math.cos(phi);
+
+      particleSpeeds.push({
+        x: (Math.random() - 0.5) * 0.05,
+        y: (Math.random() - 0.5) * 0.05,
+        z: (Math.random() - 0.5) * 0.05
+      });
+    }
+
+    particleGeom.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+    const particleMat = new THREE.PointsMaterial({
+      color: 0x3b82f6,
+      size: 2,
+      transparent: true,
+      opacity: 0.4
+    });
+    const spaceParticles = new THREE.Points(particleGeom, particleMat);
+    scene.add(spaceParticles);
+
+    // Resize Handler
+    const handleResize = () => {
+      if (!containerRef.current) return;
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    };
+    window.addEventListener('resize', handleResize);
+
+    // Animation Loop
+    let animationFrameId;
+    const animate = () => {
+      animationFrameId = requestAnimationFrame(animate);
+
+      // Rotate the globe group
+      globeGroup.rotation.y += 0.002;
+      globeGroup.rotation.x += 0.0005;
+
+      // Rotate space particles in opposite direction
+      spaceParticles.rotation.y -= 0.0005;
+      spaceParticles.rotation.x -= 0.0002;
+
+      renderer.render(scene, camera);
+    };
+    animate();
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      cancelAnimationFrame(animationFrameId);
+      if (container && renderer.domElement.parentNode) {
+        container.removeChild(renderer.domElement);
+      }
+      // Dispose materials & geometries
+      sphereGeom.dispose();
+      sphereMat.dispose();
+      pointsGeom.dispose();
+      pointsMat.dispose();
+      particleGeom.dispose();
+      particleMat.dispose();
+      curveMaterials.forEach(m => m.dispose());
+      curveMeshes.forEach(m => m.geometry.dispose());
+    };
+  }, []);
+
+  return (
+    <div 
+      ref={containerRef} 
+      className="three-bg-canvas"
+      style={{ 
+        position: 'absolute', 
+        top: 0, 
+        left: 0, 
+        width: '100%', 
+        height: '100%', 
+        zIndex: 0, 
+        pointerEvents: 'none',
+        opacity: 0.75
+      }} 
+    />
+  );
+}
 
 export default function App() {
   const [token, setToken] = useState(localStorage.getItem('token') || '');
@@ -899,6 +1107,7 @@ export default function App() {
   if (!token || !user) {
     return (
       <div className="login-screen">
+        <ThreeLogisticsGlobe />
         <div className="login-bg-glow-1"></div>
         <div className="login-bg-glow-2"></div>
         <div className="login-left">

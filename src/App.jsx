@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { 
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, 
-  Tooltip, Legend, LineChart, Line, Cell, CartesianGrid, PieChart, Pie
+  Tooltip, Legend, LineChart, Line, Cell, CartesianGrid, PieChart, Pie, AreaChart, Area
 } from 'recharts';
 
 // Utility to get coordinates for a city

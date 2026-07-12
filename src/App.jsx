@@ -3108,8 +3108,10 @@ export default function App() {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr>
-                      <td style={{ fontWeight: '600' }}>Fleet Manager</td>
+                    <tr style={user.role === 'Fleet Manager' ? { backgroundColor: 'rgba(245, 158, 11, 0.08)', borderLeft: '3px solid var(--primary)' } : {}}>
+                      <td style={{ fontWeight: '600' }}>
+                        Fleet Manager {user.role === 'Fleet Manager' && <span style={{ color: 'var(--primary)', fontSize: '10px', marginLeft: '6px', fontWeight: '800', letterSpacing: '0.5px' }}>(ACTIVE)</span>}
+                      </td>
                       <td><span className="badge badge-success">Read / Write</span></td>
                       <td><span className="badge badge-success">Read / Write</span></td>
                       <td><span className="badge badge-muted">View Only</span></td>
@@ -3117,8 +3119,10 @@ export default function App() {
                       <td><span className="badge badge-muted">View Only</span></td>
                       <td><span className="badge badge-success">Full Access</span></td>
                     </tr>
-                    <tr>
-                      <td style={{ fontWeight: '600' }}>Dispatcher</td>
+                    <tr style={user.role === 'Dispatcher' ? { backgroundColor: 'rgba(245, 158, 11, 0.08)', borderLeft: '3px solid var(--primary)' } : {}}>
+                      <td style={{ fontWeight: '600' }}>
+                        Dispatcher {user.role === 'Dispatcher' && <span style={{ color: 'var(--primary)', fontSize: '10px', marginLeft: '6px', fontWeight: '800', letterSpacing: '0.5px' }}>(ACTIVE)</span>}
+                      </td>
                       <td><span className="badge badge-muted">View Only</span></td>
                       <td><span className="badge badge-danger">No Access</span></td>
                       <td><span className="badge badge-success">Read / Write</span></td>
@@ -3126,8 +3130,10 @@ export default function App() {
                       <td><span className="badge badge-danger">No Access</span></td>
                       <td><span className="badge badge-danger">No Access</span></td>
                     </tr>
-                    <tr>
-                      <td style={{ fontWeight: '600' }}>Safety Officer</td>
+                    <tr style={user.role === 'Safety Officer' ? { backgroundColor: 'rgba(245, 158, 11, 0.08)', borderLeft: '3px solid var(--primary)' } : {}}>
+                      <td style={{ fontWeight: '600' }}>
+                        Safety Officer {user.role === 'Safety Officer' && <span style={{ color: 'var(--primary)', fontSize: '10px', marginLeft: '6px', fontWeight: '800', letterSpacing: '0.5px' }}>(ACTIVE)</span>}
+                      </td>
                       <td><span className="badge badge-danger">No Access</span></td>
                       <td><span className="badge badge-success">Read / Write</span></td>
                       <td><span className="badge badge-muted">View Only</span></td>
@@ -3135,8 +3141,10 @@ export default function App() {
                       <td><span className="badge badge-danger">No Access</span></td>
                       <td><span className="badge badge-danger">No Access</span></td>
                     </tr>
-                    <tr>
-                      <td style={{ fontWeight: '600' }}>Financial Analyst</td>
+                    <tr style={user.role === 'Financial Analyst' ? { backgroundColor: 'rgba(245, 158, 11, 0.08)', borderLeft: '3px solid var(--primary)' } : {}}>
+                      <td style={{ fontWeight: '600' }}>
+                        Financial Analyst {user.role === 'Financial Analyst' && <span style={{ color: 'var(--primary)', fontSize: '10px', marginLeft: '6px', fontWeight: '800', letterSpacing: '0.5px' }}>(ACTIVE)</span>}
+                      </td>
                       <td><span className="badge badge-muted">View Only</span></td>
                       <td><span className="badge badge-danger">No Access</span></td>
                       <td><span className="badge badge-danger">No Access</span></td>

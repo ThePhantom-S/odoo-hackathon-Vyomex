@@ -286,8 +286,8 @@ function ThreeLogisticsGlobe() {
     if (!containerRef.current) return;
 
     const container = containerRef.current;
-    const width = container.clientWidth;
-    const height = container.clientHeight;
+    const width = window.innerWidth;
+    const height = window.innerHeight;
 
     // Create Scene, Camera, Renderer
     const scene = new THREE.Scene();
@@ -422,9 +422,8 @@ function ThreeLogisticsGlobe() {
 
     // Resize Handler
     const handleResize = () => {
-      if (!containerRef.current) return;
-      const w = container.clientWidth;
-      const h = container.clientHeight;
+      const w = window.innerWidth;
+      const h = window.innerHeight;
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);

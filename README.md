@@ -15,7 +15,7 @@
 **Next-generation transport operations dashboard with dynamic telemetry, dispatches, and AI-powered optimizations.**  
 Real-time dispatch tracking · Multi-role simulator matrix · Dynamic maintenance diagnostics · Groq LLaMA 3.3 Engine
 
-Built for the Oodo Hackathon by Team **Vyomex**
+Built for the Odoo Hackathon by Team **Vyomex**
 
 </div>
 
@@ -23,44 +23,64 @@ Built for the Oodo Hackathon by Team **Vyomex**
 
 ## 🏗️ System Architecture
 
+TransitOps is built on a modular, decoupled architecture consisting of five integrated processing layers designed for high scalability, real-time telemetry rendering, and serverless AI cognitive analysis:
+
 ```mermaid
 flowchart TB
-    subgraph Client_Tier [Client Tier - Frontend]
-        ReactUI["React 19 Dashboard UI"]
-        ViteDev["Vite Dev Server (Port 5173)"]
-        ThreeGlobe["Three.js (Logistics Globe)"]
-        RechartsSVG["Recharts (KPI Charts)"]
+    %% Nodes definitions
+    ReactUI["React 19 Dashboard SPA"]
+    ThreeGlobe["Three.js 3D Globe Mesh"]
+    RechartsSVG["Recharts Analytics SVGs"]
+    ViteDev["Vite Dev Server (Port 5173)"]
+    ViteProxy["Vite HTTP Proxy Middleware"]
+    ExpressServer["Express.js Server (Port 5000)"]
+    JWTMiddleware["JWT Auth & Role Gatekeeping"]
+    ReportsRouter["Reports & AI Router"]
+    ResourceRouters["Resource Routers (Vehicles, Drivers, Trips)"]
+    SQLiteDB[("SQLite 3 DB (transitops.db)")]
+    GroqInference["Groq Cloud AI Gateway (Llama 3.3-70B)"]
+
+    %% Subgraphs (Tiers)
+    subgraph UI_Tier [1. Presentation Layer (Frontend)]
+        ViteDev --> ReactUI
         ReactUI --> ThreeGlobe
         ReactUI --> RechartsSVG
     end
 
-    subgraph Proxy_Gateway [Proxy Gateway]
-        ViteProxy["Vite HTTP Proxy Gateway"]
+    subgraph Gateway_Tier [2. Transport Layer (Proxy)]
+        ViteProxy
     end
 
-    subgraph Application_Tier [Application Tier - Backend]
-        ExpressServer["Express.js Server (Port 5000)"]
-        JWTMiddleware["JWT Auth & RBAC Middleware"]
-        ReportsRouter["Reports & Analytics Router"]
-        OtherRouters["Resource Routers (Vehicles/Drivers/Trips)"]
-        
+    subgraph Logic_Tier [3. Application Layer (Backend)]
         ExpressServer --> JWTMiddleware
         JWTMiddleware --> ReportsRouter
-        JWTMiddleware --> OtherRouters
+        JWTMiddleware --> ResourceRouters
     end
 
-    subgraph Data_AI_Tier [Data & AI Inference Tier]
-        SQLiteDB[("SQLite 3 Database (transitops.db)")]
-        GroqInference["Groq Cloud AI Gateway (Llama 3.3)"]
+    subgraph Storage_Inference_Tier [4. Data & Intelligence Layer]
+        SQLiteDB
+        GroqInference
     end
 
-    %% Connections
-    ViteDev -- "Client Requests (/api/*)" --> ViteProxy
-    ViteProxy -- "Proxy Relay" --> ExpressServer
+    %% Cross-tier connections
+    ReactUI -- "HTTPS REST Queries (/api/*)" --> ViteProxy
+    ViteProxy -- "TCP Reverse Relay" --> ExpressServer
+    ResourceRouters -- "CRUD SQL Queries" --> SQLiteDB
+    ReportsRouter -- "Aggregated Metrics" --> SQLiteDB
+    ReportsRouter -- "Secure API Payload (JSON)" --> GroqInference
     
-    OtherRouters -- "SQL Queries" --> SQLiteDB
-    ReportsRouter -- "SQL Queries" --> SQLiteDB
-    ReportsRouter -- "REST Inference Payload" --> GroqInference
+    %% Stylings
+    classDef frontend fill:#3b82f6,stroke:#1d4ed8,stroke-width:2px,color:#fff;
+    classDef backend fill:#ef4444,stroke:#b91c1c,stroke-width:2px,color:#fff;
+    classDef db fill:#003b57,stroke:#002237,stroke-width:2px,color:#fff;
+    classDef ai fill:#a855f7,stroke:#7e22ce,stroke-width:2px,color:#fff;
+    classDef proxy fill:#f59e0b,stroke:#b45309,stroke-width:2px,color:#fff;
+
+    class ReactUI,ThreeGlobe,RechartsSVG,ViteDev frontend;
+    class ExpressServer,JWTMiddleware,ReportsRouter,ResourceRouters backend;
+    class SQLiteDB db;
+    class GroqInference ai;
+    class ViteProxy proxy;
 ```
 
 ---
@@ -175,7 +195,7 @@ npm run build
 
 ## 👥 Team Vyomex
 
-Built with ❤️ for the Oodo Hackathon by:
+Built with ❤️ for the Odoo Hackathon by:
 *   **Hari Krishnan R**
 *   **Immanuel Thomas J**
 *   **Jackson JP**

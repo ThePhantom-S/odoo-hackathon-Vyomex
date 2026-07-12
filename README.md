@@ -32,6 +32,86 @@ TransitOps is a high-fidelity, next-generation fleet logistics dashboard designe
 
 ---
 
+## 🏗️ System Architecture & Workflow
+
+### 1. System Architecture Diagram
+The architecture is structured as a decoupled client-server model with Vite acting as a local HTTP reverse-proxy, delegating authenticated queries to our Node.js SQLite server:
+
+```mermaid
+flowchart TB
+    subgraph Client_Tier [Client Tier - Frontend]
+        ReactUI["React 19 Dashboard UI"]
+        ViteDev["Vite Dev Server (Port 5173)"]
+        ThreeGlobe["Three.js (Logistics Globe)"]
+        RechartsSVG["Recharts (KPI Charts)"]
+        ReactUI --> ThreeGlobe
+        ReactUI --> RechartsSVG
+    end
+
+    subgraph Proxy_Gateway [Proxy Gateway]
+        ViteProxy["Vite HTTP Proxy Gateway"]
+    end
+
+    subgraph Application_Tier [Application Tier - Backend]
+        ExpressServer["Express.js Server (Port 5000)"]
+        JWTMiddleware["JWT Auth & RBAC Middleware"]
+        ReportsRouter["Reports & Analytics Router"]
+        OtherRouters["Resource Routers (Vehicles/Drivers/Trips)"]
+        
+        ExpressServer --> JWTMiddleware
+        JWTMiddleware --> ReportsRouter
+        JWTMiddleware --> OtherRouters
+    end
+
+    subgraph Data_AI_Tier [Data & AI Inference Tier]
+        SQLiteDB[("SQLite 3 Database (transitops.db)")]
+        GroqInference["Groq Cloud AI Gateway (Llama 3.3)"]
+    end
+
+    %% Connections
+    ViteDev -- "Client Requests (/api/*)" --> ViteProxy
+    ViteProxy -- "Proxy Relay" --> ExpressServer
+    
+    OtherRouters -- "SQL Queries" --> SQLiteDB
+    ReportsRouter -- "Aggregations" --> SQLiteDB
+    ReportsRouter -- "REST Payload / Inference" --> GroqInference
+```
+
+### 2. AI Executive Analysis Pipeline Workflow
+Below is the sequence flow of the AI telemetry operations analysis, showing the lifecycle from the UI request trigger to the Groq inference return:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as Fleet Manager / Analyst
+    participant UI as React UI (Sparkles Button)
+    participant API as Express API Server
+    participant DB as SQLite 3 File
+    participant AI as Groq API (Llama 3.3)
+
+    User->>UI: Click "Generate AI Insights"
+    activate UI
+    UI->>UI: Ingest Status Step Cycle (1500ms intervals)
+    UI->>API: POST /api/reports/ai-analysis (Auth: Bearer JWT)
+    activate API
+    API->>DB: Query Fleet KPIs, Utilizations, Emissions & Vehicle ROI
+    activate DB
+    DB-->>API: Return Raw Row & Telemetry Datasets
+    deactivate DB
+    API->>API: Structure Context Metrics Payload
+    API->>AI: POST /v1/chat/completions (Model: llama-3.3-70b-versatile)
+    activate AI
+    AI-->>API: Return Markdown Analysis Suggestion
+    deactivate AI
+    API-->>UI: Respond with JSON { analysis: markdown }
+    deactivate API
+    UI->>UI: Parse Markdown Headers & Highlights
+    UI-->>User: Render Custom AI Optimization Cards
+    deactivate UI
+```
+
+---
+
 ## 🛠️ Technology Stack
 
 * **Frontend**: React 19, Vite, Vanilla CSS 3 (Theme variables & custom animations), Recharts (KPIs & trends), Three.js (Logistics Globe), Lucide React (Icons).

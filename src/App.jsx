@@ -3698,8 +3698,8 @@ export default function App() {
 
           {/* 9. Live Route Tracking Modal */}
           {trackingTrip && (() => {
-            const src = getCoordinatesForCity(trackingTrip.source);
-            const dest = getCoordinatesForCity(trackingTrip.destination);
+            const src = getCoordinatesForCity(getShortAddressName(trackingTrip.source));
+            const dest = getCoordinatesForCity(getShortAddressName(trackingTrip.destination));
 
             return (
               <div className="modal-overlay" onClick={() => setTrackingTrip(null)}>
@@ -3770,12 +3770,12 @@ export default function App() {
                       {/* Source Node */}
                       <circle cx={src.x} cy={src.y} r="8" fill="rgba(59, 130, 246, 0.2)" stroke="#3b82f6" strokeWidth="2" />
                       <circle cx={src.x} cy={src.y} r="3" fill="#3b82f6" />
-                      <text x={src.x} y={src.y - 12} fill="var(--text-primary)" fontSize="10" fontWeight="600" textAnchor="middle">{trackingTrip.source}</text>
+                      <text x={src.x} y={src.y - 12} fill="var(--text-primary)" fontSize="10" fontWeight="600" textAnchor="middle">{getShortAddressName(trackingTrip.source)}</text>
 
                       {/* Destination Node */}
                       <circle cx={dest.x} cy={dest.y} r="8" fill="rgba(16, 185, 129, 0.2)" stroke="#10b981" strokeWidth="2" />
                       <circle cx={dest.x} cy={dest.y} r="3" fill="#10b981" />
-                      <text x={dest.x} y={dest.y - 12} fill="var(--text-primary)" fontSize="10" fontWeight="600" textAnchor="middle">{trackingTrip.destination}</text>
+                      <text x={dest.x} y={dest.y - 12} fill="var(--text-primary)" fontSize="10" fontWeight="600" textAnchor="middle">{getShortAddressName(trackingTrip.destination)}</text>
 
                       {/* Animated Moving Vehicle Circle */}
                       {trackingTrip.status === 'Dispatched' && (

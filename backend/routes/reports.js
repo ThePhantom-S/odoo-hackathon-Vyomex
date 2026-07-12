@@ -202,4 +202,148 @@ router.get('/export-csv', authenticateToken, authorizeRoles('Fleet Manager', 'Fi
   }
 });
 
+// Generate AI Report Analysis using Groq (Fleet Manager, Financial Analyst)
+router.post('/ai-analysis', authenticateToken, authorizeRoles('Fleet Manager', 'Financial Analyst'), async (req, res) => {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) {
+    return res.status(500).json({ error: 'Groq API Key is not configured on the server. Please add it to your .env file.' });
+  }
+
+  try {
+    // 1. Calculate General KPIs
+    const vStats = await query(`
+      SELECT status, COUNT(*) as count 
+      FROM vehicles 
+      GROUP BY status
+    `);
+    const statsMap = { Available: 0, 'On Trip': 0, 'In Shop': 0, Retired: 0 };
+    vStats.forEach(item => {
+      statsMap[item.status] = item.count;
+    });
+
+    const totalActiveFleet = statsMap['Available'] + statsMap['On Trip'] + statsMap['In Shop'];
+    const fleetUtilization = totalActiveFleet > 0 
+      ? Math.round((statsMap['On Trip'] / totalActiveFleet) * 100) 
+      : 0;
+
+    const tStats = await query(`
+      SELECT status, COUNT(*) as count 
+      FROM trips 
+      GROUP BY status
+    `);
+    const tripMap = { Draft: 0, Dispatched: 0, Completed: 0, Cancelled: 0 };
+    tStats.forEach(item => {
+      tripMap[item.status] = item.count;
+    });
+
+    const dStats = await query(`
+      SELECT status, COUNT(*) as count 
+      FROM drivers 
+      GROUP BY status
+    `);
+    const driverMap = { Available: 0, 'On Trip': 0, 'Off Duty': 0, Suspended: 0 };
+    dStats.forEach(item => {
+      driverMap[item.status] = item.count;
+    });
+
+    const vehicleAnalytics = await query(`
+      SELECT 
+        v.registration_number,
+        v.name_model,
+        v.type,
+        v.acquisition_cost,
+        v.status,
+        COALESCE((SELECT SUM(t.revenue) FROM trips t WHERE t.vehicle_reg_no = v.registration_number AND t.status = 'Completed'), 0) as total_revenue,
+        COALESCE((SELECT SUM(t.planned_distance) FROM trips t WHERE t.vehicle_reg_no = v.registration_number AND t.status = 'Completed'), 0) as total_distance,
+        COALESCE((SELECT SUM(t.actual_fuel_consumed) FROM trips t WHERE t.vehicle_reg_no = v.registration_number AND t.status = 'Completed'), 0) as total_fuel_liters,
+        COALESCE((SELECT SUM(e.cost) FROM expenses e WHERE e.vehicle_reg_no = v.registration_number AND e.type = 'Fuel'), 0) as fuel_cost,
+        COALESCE((SELECT SUM(e.cost) FROM expenses e WHERE e.vehicle_reg_no = v.registration_number AND e.type = 'Maintenance'), 0) as maintenance_cost,
+        COALESCE((SELECT SUM(e.cost) FROM expenses e WHERE e.vehicle_reg_no = v.registration_number AND e.type IN ('Toll', 'Other')), 0) as other_cost
+      FROM vehicles v
+    `);
+
+    const formattedVehicleData = vehicleAnalytics.map(v => {
+      const fuelAndMaint = v.fuel_cost + v.maintenance_cost;
+      const totalOpCost = fuelAndMaint + v.other_cost;
+      const fuelEfficiency = v.total_fuel_liters > 0 
+        ? parseFloat((v.total_distance / v.total_fuel_liters).toFixed(2)) 
+        : 0;
+      const roiPercent = v.acquisition_cost > 0 
+        ? parseFloat((((v.total_revenue - fuelAndMaint) / v.acquisition_cost) * 100).toFixed(2)) 
+        : 0;
+      const carbonEmissions = parseFloat((v.total_fuel_liters * 2.68).toFixed(2));
+
+      return {
+        registration_number: v.registration_number,
+        name_model: v.name_model,
+        type: v.type,
+        status: v.status,
+        acquisition_cost: v.acquisition_cost,
+        total_revenue: v.total_revenue,
+        total_distance: v.total_distance,
+        total_fuel_liters: v.total_fuel_liters,
+        fuel_cost: v.fuel_cost,
+        maintenance_cost: v.maintenance_cost,
+        operational_cost: totalOpCost,
+        fuel_efficiency: fuelEfficiency,
+        roi: roiPercent,
+        carbon_emissions: carbonEmissions
+      };
+    });
+
+    const totalCarbonEmissions = parseFloat(formattedVehicleData.reduce((sum, v) => sum + v.carbon_emissions, 0).toFixed(2));
+
+    const payload = {
+      kpis: {
+        activeVehicles: statsMap['On Trip'],
+        availableVehicles: statsMap['Available'],
+        maintenanceVehicles: statsMap['In Shop'],
+        activeTrips: tripMap['Dispatched'],
+        pendingTrips: tripMap['Draft'],
+        driversOnDuty: driverMap['Available'] + driverMap['On Trip'],
+        fleetUtilization,
+        totalCarbonEmissions
+      },
+      vehicles: formattedVehicleData
+    };
+
+    // Make request to Groq OpenAI-compatible Chat Completions endpoint
+    const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an elite fleet operations analyst and logistics AI advisor. Analyze the provided fleet metrics and provide highly actionable, executive-level recommendations to improve ROI, fuel efficiency, reduce carbon footprint, and preemptively optimize maintenance schedules. Keep the response concise, punchy, and formatted in clean, professional markdown with clear headings, bullets, and bold highlights. Highlight underutilized assets, high carbon emitters, and optimization wins.'
+          },
+          {
+            role: 'user',
+            content: `Here are the latest telemetry and financial metrics of our transit operations fleet:\n\n${JSON.stringify(payload, null, 2)}`
+          }
+        ],
+        temperature: 0.3
+      })
+    });
+
+    if (!groqResponse.ok) {
+      const errText = await groqResponse.text();
+      console.error('Groq API Error Response:', errText);
+      return res.status(502).json({ error: 'Groq API returned an error: ' + errText });
+    }
+
+    const groqData = await groqResponse.json();
+    const markdownContent = groqData.choices?.[0]?.message?.content || 'No analysis could be generated.';
+
+    res.json({ analysis: markdownContent });
+  } catch (err) {
+    console.error('Error generating AI analysis:', err);
+    res.status(500).json({ error: 'Failed to generate AI analysis' });
+  }
+});
+
 export default router;

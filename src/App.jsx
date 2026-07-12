@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Truck, Users, Route, Wrench, 
   Fuel, TrendingUp, Settings, LogOut, Plus, 
   Search, Filter, Calendar, DollarSign, ShieldAlert, 
-  FileSpreadsheet, Check, X, Moon, Sun, AlertTriangle, Map, Leaf, Bell, Clock, Activity, Mail, Lock,
+  FileSpreadsheet, Check, X, Moon, Sun, AlertTriangle, Map, Leaf, Bell, Clock, Activity, Mail, Lock, Sparkles,
   Play, Trash2
 } from 'lucide-react';
 import { 
@@ -563,6 +563,12 @@ export default function App() {
 
   // Notifications Bell state
   const [notifPanelOpen, setNotifPanelOpen] = useState(false);
+
+  // AI analysis states
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiResponse, setAiResponse] = useState(null);
+  const [aiError, setAiError] = useState(null);
+  const [aiStatusMessage, setAiStatusMessage] = useState('');
 
   // Dynamic Leaflet map state loader hook
   const [leafletLoaded, setLeafletLoaded] = useState(false);
@@ -1144,6 +1150,60 @@ export default function App() {
   const handleCSVExport = () => {
     window.open(`${API_BASE}/reports/export-csv?authorization=Bearer ${token}`, '_blank');
     triggerMessage('CSV download started.');
+  };
+
+  // Generate AI Executive Report Analysis via Groq
+  const handleGenerateAIAnalysis = async () => {
+    setAiLoading(true);
+    setAiError(null);
+    setAiResponse(null);
+    
+    const statusSteps = [
+      "Initializing AI pipeline...",
+      "Ingesting live SQLite database schemas...",
+      "Consolidating fleet vehicle ROI parameters...",
+      "Parsing actual fuel and maintenance logs...",
+      "Formulating ESG rating metrics...",
+      "Querying Groq Llama-3.3-70b-versatile inference engine...",
+      "Drafting executive operations summary...",
+      "Finalizing optimization recommendations..."
+    ];
+
+    let currentStep = 0;
+    setAiStatusMessage(statusSteps[0]);
+    const interval = setInterval(() => {
+      if (currentStep < statusSteps.length - 1) {
+        currentStep++;
+        setAiStatusMessage(statusSteps[currentStep]);
+      }
+    }, 1500);
+
+    try {
+      const res = await fetch(`${API_BASE}/reports/ai-analysis`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      clearInterval(interval);
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Server failed to analyze fleet.');
+      }
+
+      const data = await res.json();
+      setAiResponse(data.analysis);
+      triggerMessage('AI analysis report generated successfully.');
+    } catch (err) {
+      clearInterval(interval);
+      console.error(err);
+      setAiError(err.message || 'An error occurred during analysis.');
+      triggerMessage('Failed to generate AI analysis.', 'danger');
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   // --- RENDERS ---
@@ -2952,15 +3012,126 @@ export default function App() {
           {activeTab === 'Reports & Analytics' && (
             <div>
               {/* Export control */}
-              <div className="card" style={{ padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <h3 style={{ fontSize: '16px', fontWeight: '600' }}>Operational Excel/CSV Report</h3>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '2px' }}>Download the complete vehicle lifecycle and ROI data sheet</p>
+              <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                <div className="card" style={{ flex: 1, minWidth: '280px', padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 0 }}>
+                  <div>
+                    <h3 style={{ fontSize: '16px', fontWeight: '600' }}>Operational Excel/CSV Report</h3>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '2px' }}>Download the complete vehicle lifecycle and ROI data sheet</p>
+                  </div>
+                  <button className="btn btn-primary" onClick={handleCSVExport}>
+                    <FileSpreadsheet size={16} />
+                    <span>Export Fleet CSV</span>
+                  </button>
                 </div>
-                <button className="btn btn-primary" onClick={handleCSVExport}>
-                  <FileSpreadsheet size={16} />
-                  <span>Export Fleet CSV</span>
-                </button>
+              </div>
+
+              {/* AI Executive Analysis */}
+              <div className="card animate-fade-in" style={{
+                background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.08), rgba(59, 130, 246, 0.08))',
+                border: '1px solid rgba(168, 85, 247, 0.25)',
+                boxShadow: '0 8px 30px rgba(168, 85, 247, 0.05)',
+                padding: '24px',
+                marginTop: '20px',
+                marginBottom: '24px'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                  <div style={{ flex: 1, minWidth: '300px' }}>
+                    <h3 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'var(--font-display)' }}>
+                      <Sparkles size={20} style={{ color: '#a855f7' }} />
+                      <span>AI Copilot Fleet Operations Analyst</span>
+                    </h3>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '4px', maxWidth: '640px' }}>
+                      Analyze real-time SQLite database metrics, fleet utilization logs, ROI performance indexes, and ESG carbon footprints. Automatically generates an executive logistics optimization brief.
+                    </p>
+                  </div>
+                  <button 
+                    className="btn" 
+                    onClick={handleGenerateAIAnalysis} 
+                    disabled={aiLoading}
+                    style={{ 
+                      background: 'linear-gradient(135deg, #a855f7, #3b82f6)', 
+                      color: '#ffffff',
+                      border: 'none',
+                      padding: '10px 20px',
+                      borderRadius: '6px',
+                      fontWeight: '700',
+                      boxShadow: '0 4px 15px rgba(168, 85, 247, 0.3)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      cursor: 'pointer',
+                      opacity: aiLoading ? 0.75 : 1
+                    }}
+                  >
+                    <Sparkles size={16} />
+                    <span>{aiLoading ? 'Analyzing...' : 'Generate AI Insights'}</span>
+                  </button>
+                </div>
+
+                {/* Loading state */}
+                {aiLoading && (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 0', gap: '12px' }}>
+                    <div style={{ width: '32px', height: '32px', border: '3px solid rgba(168, 85, 247, 0.1)', borderTop: '3px solid #a855f7', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                    <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)', letterSpacing: '0.3px' }}>{aiStatusMessage}</span>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Executing secure deep analytical query (approx. 5s)</span>
+                  </div>
+                )}
+
+                {/* Error state */}
+                {aiError && (
+                  <div style={{ marginTop: '16px', padding: '12px 16px', borderRadius: '6px', backgroundColor: 'var(--danger-bg)', border: '1px solid var(--danger)', color: 'var(--danger)', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <ShieldAlert size={16} />
+                    <span>{aiError}</span>
+                  </div>
+                )}
+
+                {/* Report markdown response */}
+                {aiResponse && (
+                  <div className="animate-fade-in" style={{
+                    marginTop: '20px',
+                    padding: '24px',
+                    backgroundColor: 'rgba(2, 6, 23, 0.45)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '8px',
+                    fontSize: '13.5px',
+                    color: 'var(--text-primary)',
+                    lineHeight: '1.6',
+                    maxHeight: '400px',
+                    overflowY: 'auto'
+                  }}>
+                    {aiResponse.split('\n').map((line, idx) => {
+                      if (line.startsWith('# ')) {
+                        return <h2 key={idx} style={{ fontSize: '18px', fontWeight: '800', marginTop: '16px', marginBottom: '8px', color: '#a855f7', fontFamily: 'var(--font-display)' }}>{line.replace('# ', '')}</h2>;
+                      }
+                      if (line.startsWith('## ')) {
+                        return <h3 key={idx} style={{ fontSize: '15px', fontWeight: '700', marginTop: '14px', marginBottom: '6px', color: '#3b82f6', fontFamily: 'var(--font-display)' }}>{line.replace('## ', '')}</h3>;
+                      }
+                      if (line.startsWith('### ')) {
+                        return <h4 key={idx} style={{ fontSize: '13px', fontWeight: '700', marginTop: '12px', marginBottom: '4px', color: 'var(--text-primary)' }}>{line.replace('### ', '')}</h4>;
+                      }
+                      if (line.startsWith('- ') || line.startsWith('* ')) {
+                        const raw = line.replace(/^[-*]\s+/, '');
+                        const parts = raw.split('**');
+                        return (
+                          <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', margin: '6px 0 6px 12px' }}>
+                            <span style={{ color: '#a855f7', marginTop: '4px' }}>•</span>
+                            <span style={{ color: 'var(--text-secondary)' }}>
+                              {parts.map((p, pIdx) => pIdx % 2 === 1 ? <strong key={pIdx} style={{ color: 'var(--text-primary)', fontWeight: '700' }}>{p}</strong> : p)}
+                            </span>
+                          </div>
+                        );
+                      }
+                      if (line.trim() === '') return <div key={idx} style={{ height: '8px' }} />;
+                      
+                      const parts = line.split('**');
+                      return (
+                        <p key={idx} style={{ margin: '8px 0', color: 'var(--text-secondary)' }}>
+                          {parts.map((p, pIdx) => pIdx % 2 === 1 ? <strong key={pIdx} style={{ color: 'var(--text-primary)', fontWeight: '700' }}>{p}</strong> : p)}
+                        </p>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* Dynamic Recharts Charts */}

@@ -10,6 +10,63 @@ import {
   Tooltip, Legend, LineChart, Line, Cell, CartesianGrid, PieChart, Pie
 } from 'recharts';
 
+// Custom UI Dropdown Component
+function CustomSelect({ options, value, onChange, placeholder = 'Select option', disabled = false, className = '', name, style, required = false }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = React.useRef(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const selectedOption = options.find(opt => String(opt.value) === String(value));
+
+  return (
+    <div className={`custom-select-container ${className} ${disabled ? 'disabled' : ''}`} style={style} ref={dropdownRef}>
+      {name && (
+        <input 
+          type="text" 
+          name={name} 
+          value={value || ''} 
+          required={required} 
+          style={{ position: 'absolute', opacity: 0, width: '1px', height: '1px', zIndex: -1, pointerEvents: 'none' }}
+          onChange={() => {}} 
+        />
+      )}
+      <div 
+        className={`custom-select-trigger ${isOpen ? 'open' : ''}`} 
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+      >
+        <span>{selectedOption ? selectedOption.label : placeholder}</span>
+        <span className="custom-select-arrow">▼</span>
+      </div>
+      {isOpen && (
+        <div className="custom-select-options">
+          {options.map((opt) => (
+            <div 
+              key={opt.value} 
+              className={`custom-select-option ${String(value) === String(opt.value) ? 'selected' : ''} ${opt.disabled ? 'disabled' : ''}`}
+              onClick={() => {
+                if (opt.disabled) return;
+                onChange(opt.value);
+                setIsOpen(false);
+              }}
+            >
+              {opt.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const API_BASE = '/api';
 
 export default function App() {
@@ -57,6 +114,18 @@ export default function App() {
 
   // Custom confirmation dialog state
   const [confirmModal, setConfirmModal] = useState({ open: false, title: '', message: '', onConfirm: null });
+
+  // Custom Select Dropdowns states
+  const [formVehType, setFormVehType] = useState('Van');
+  const [formVehStatus, setFormVehStatus] = useState('Available');
+  const [formDrvCat, setFormDrvCat] = useState('LMV');
+  const [formDrvStatus, setFormDrvStatus] = useState('Available');
+  const [formTripVeh, setFormTripVeh] = useState('');
+  const [formTripDrv, setFormTripDrv] = useState('');
+  const [formMaintVeh, setFormMaintVeh] = useState('');
+  const [formExpVeh, setFormExpVeh] = useState('');
+  const [formExpType, setFormExpType] = useState('Toll');
+  const [formExpTrip, setFormExpTrip] = useState('');
 
   // Filter & Search states
   const [vehicleSearch, setVehicleSearch] = useState('');
@@ -1052,7 +1121,7 @@ export default function App() {
               <div className="card-header">
                 <h3 className="card-title">Vehicle Registry</h3>
                 {hasWriteAccess(user.role, 'Fleet') && (
-                  <button className="btn btn-primary" onClick={() => { setSelectedVehicle(null); setVehicleModal(true); }}>
+                  <button className="btn btn-primary" onClick={() => { setSelectedVehicle(null); setFormVehType('Van'); setFormVehStatus('Available'); setVehicleModal(true); }}>
                     <Plus size={16} />
                     <span>Register Vehicle</span>
                   </button>
@@ -1073,21 +1142,31 @@ export default function App() {
                 </div>
                 
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  <select className="form-control" style={{ width: '130px' }} value={vehicleTypeFilter} onChange={e => setVehicleTypeFilter(e.target.value)}>
-                    <option value="All">All Types</option>
-                    <option value="Van">Van</option>
-                    <option value="Truck">Truck</option>
-                    <option value="Mini">Mini-Truck</option>
-                    <option value="Sedan">Sedan</option>
-                  </select>
+                  <CustomSelect
+                    style={{ width: '130px' }}
+                    options={[
+                      { value: 'All', label: 'All Types' },
+                      { value: 'Van', label: 'Van' },
+                      { value: 'Truck', label: 'Truck' },
+                      { value: 'Mini', label: 'Mini-Truck' },
+                      { value: 'Sedan', label: 'Sedan' }
+                    ]}
+                    value={vehicleTypeFilter}
+                    onChange={setVehicleTypeFilter}
+                  />
 
-                  <select className="form-control" style={{ width: '130px' }} value={vehicleStatusFilter} onChange={e => setVehicleStatusFilter(e.target.value)}>
-                    <option value="All">All Statuses</option>
-                    <option value="Available">Available</option>
-                    <option value="On Trip">On Trip</option>
-                    <option value="In Shop">In Shop</option>
-                    <option value="Retired">Retired</option>
-                  </select>
+                  <CustomSelect
+                    style={{ width: '130px' }}
+                    options={[
+                      { value: 'All', label: 'All Statuses' },
+                      { value: 'Available', label: 'Available' },
+                      { value: 'On Trip', label: 'On Trip' },
+                      { value: 'In Shop', label: 'In Shop' },
+                      { value: 'Retired', label: 'Retired' }
+                    ]}
+                    value={vehicleStatusFilter}
+                    onChange={setVehicleStatusFilter}
+                  />
                 </div>
               </div>
 
@@ -1134,7 +1213,7 @@ export default function App() {
                           {hasWriteAccess(user.role, 'Fleet') && (
                             <td>
                               <div style={{ display: 'flex', gap: '8px' }}>
-                                <button className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => { setSelectedVehicle(v); setVehicleModal(true); }}>
+                                <button className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => { setSelectedVehicle(v); setFormVehType(v.type); setFormVehStatus(v.status); setVehicleModal(true); }}>
                                   Edit
                                 </button>
                                 <button className="btn btn-danger" style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => handleVehicleDelete(v.registration_number)}>
@@ -1156,7 +1235,7 @@ export default function App() {
               <div className="card-header">
                 <h3 className="card-title">Drivers & Compliance Profiles</h3>
                 {hasWriteAccess(user.role, 'Drivers') && (
-                  <button className="btn btn-primary" onClick={() => { setSelectedDriver(null); setDriverModal(true); }}>
+                  <button className="btn btn-primary" onClick={() => { setSelectedDriver(null); setFormDrvCat('LMV'); setFormDrvStatus('Available'); setDriverModal(true); }}>
                     <Plus size={16} />
                     <span>Register Driver</span>
                   </button>
@@ -1176,13 +1255,18 @@ export default function App() {
                   />
                 </div>
 
-                <select className="form-control" style={{ width: '150px' }} value={driverStatusFilter} onChange={e => setDriverStatusFilter(e.target.value)}>
-                  <option value="All">All Statuses</option>
-                  <option value="Available">Available</option>
-                  <option value="On Trip">On Trip</option>
-                  <option value="Off Duty">Off Duty</option>
-                  <option value="Suspended">Suspended</option>
-                </select>
+                <CustomSelect
+                  style={{ width: '150px' }}
+                  options={[
+                    { value: 'All', label: 'All Statuses' },
+                    { value: 'Available', label: 'Available' },
+                    { value: 'On Trip', label: 'On Trip' },
+                    { value: 'Off Duty', label: 'Off Duty' },
+                    { value: 'Suspended', label: 'Suspended' }
+                  ]}
+                  value={driverStatusFilter}
+                  onChange={setDriverStatusFilter}
+                />
               </div>
 
               {/* Table */}
@@ -1244,7 +1328,7 @@ export default function App() {
                             {hasWriteAccess(user.role, 'Drivers') && (
                               <td>
                                 <div style={{ display: 'flex', gap: '8px' }}>
-                                  <button className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => { setSelectedDriver(d); setDriverModal(true); }}>
+                                  <button className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => { setSelectedDriver(d); setFormDrvCat(d.license_category); setFormDrvStatus(d.status); setDriverModal(true); }}>
                                     Edit
                                   </button>
                                   <button className="btn btn-danger" style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => handleDriverDelete(d.id)}>
@@ -1267,7 +1351,7 @@ export default function App() {
               <div className="card-header">
                 <h3 className="card-title">Trip Management Panel</h3>
                 {hasWriteAccess(user.role, 'Trips') && (
-                  <button className="btn btn-primary" onClick={() => setTripModal(true)}>
+                  <button className="btn btn-primary" onClick={() => { setFormTripVeh(''); setFormTripDrv(''); setTripModal(true); }}>
                     <Plus size={16} />
                     <span>Create Cargo Dispatch</span>
                   </button>
@@ -1353,7 +1437,7 @@ export default function App() {
               <div className="card-header">
                 <h3 className="card-title">Maintenance Record Log</h3>
                 {hasWriteAccess(user.role, 'Maintenance') && (
-                  <button className="btn btn-primary" onClick={() => setMaintModal(true)}>
+                  <button className="btn btn-primary" onClick={() => { setFormMaintVeh(''); setMaintModal(true); }}>
                     <Plus size={16} />
                     <span>Log Service Record</span>
                   </button>
@@ -1410,11 +1494,11 @@ export default function App() {
               {/* Financial Analyst controls */}
               {hasWriteAccess(user.role, 'Fuel & Expenses') && (
                 <div style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
-                  <button className="btn btn-primary" onClick={() => setFuelModal(true)}>
+                  <button className="btn btn-primary" onClick={() => { setFormExpVeh(''); setFuelModal(true); }}>
                     <Plus size={16} />
                     <span>Log Fuel Purchase</span>
                   </button>
-                  <button className="btn btn-secondary" onClick={() => setExpenseModal(true)}>
+                  <button className="btn btn-secondary" onClick={() => { setFormExpVeh(''); setFormExpType('Toll'); setFormExpTrip(''); setExpenseModal(true); }}>
                     <Plus size={16} />
                     <span>Record Toll / Expense</span>
                   </button>
@@ -1659,12 +1743,17 @@ export default function App() {
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '40px', backgroundColor: 'var(--primary-light)', padding: '20px', borderRadius: '8px', border: '1px dashed var(--primary)' }}>
                 <span style={{ fontWeight: '600', color: 'var(--primary)', fontSize: '14px' }}>SIMULATE ACTIVE EVALUATOR ROLE:</span>
-                <select className="form-control" style={{ width: '220px' }} value={user.role} onChange={e => handleSimulatedRoleChange(e.target.value)}>
-                  <option value="Fleet Manager">Fleet Manager</option>
-                  <option value="Dispatcher">Dispatcher</option>
-                  <option value="Safety Officer">Safety Officer</option>
-                  <option value="Financial Analyst">Financial Analyst</option>
-                </select>
+                <CustomSelect
+                  style={{ width: '220px' }}
+                  options={[
+                    { value: 'Fleet Manager', label: 'Fleet Manager' },
+                    { value: 'Dispatcher', label: 'Dispatcher' },
+                    { value: 'Safety Officer', label: 'Safety Officer' },
+                    { value: 'Financial Analyst', label: 'Financial Analyst' }
+                  ]}
+                  value={user.role}
+                  onChange={handleSimulatedRoleChange}
+                />
               </div>
 
               <h4 style={{ fontSize: '15px', fontWeight: '600', marginBottom: '16px' }}>Active RBAC Permissions Matrix</h4>
@@ -1763,12 +1852,17 @@ export default function App() {
                   <div className="form-row">
                     <div className="form-group">
                       <label>VEHICLE TYPE</label>
-                      <select name="type" className="form-control" defaultValue={selectedVehicle?.type || 'Van'}>
-                        <option value="Van">Van</option>
-                        <option value="Truck">Truck</option>
-                        <option value="Mini">Mini-Truck</option>
-                        <option value="Sedan">Sedan</option>
-                      </select>
+                      <CustomSelect 
+                        name="type"
+                        options={[
+                          { value: 'Van', label: 'Van' },
+                          { value: 'Truck', label: 'Truck' },
+                          { value: 'Mini', label: 'Mini-Truck' },
+                          { value: 'Sedan', label: 'Sedan' }
+                        ]}
+                        value={formVehType}
+                        onChange={setFormVehType}
+                      />
                     </div>
                     <div className="form-group">
                       <label>MAX CARGO CAPACITY (KG)</label>
@@ -1809,12 +1903,17 @@ export default function App() {
                   </div>
                   <div className="form-group">
                     <label>VEHICLE STATUS</label>
-                    <select name="status" className="form-control" defaultValue={selectedVehicle?.status || 'Available'}>
-                      <option value="Available">Available</option>
-                      <option value="On Trip" disabled>On Trip (Trip Dispatch Only)</option>
-                      <option value="In Shop">In Shop (Maintenance)</option>
-                      <option value="Retired">Retired</option>
-                    </select>
+                    <CustomSelect 
+                      name="status"
+                      options={[
+                        { value: 'Available', label: 'Available' },
+                        { value: 'On Trip', label: 'On Trip (Trip Dispatch Only)', disabled: true },
+                        { value: 'In Shop', label: 'In Shop (Maintenance)' },
+                        { value: 'Retired', label: 'Retired' }
+                      ]}
+                      value={formVehStatus}
+                      onChange={setFormVehStatus}
+                    />
                   </div>
                   <div className="modal-footer">
                     <button type="button" className="btn btn-secondary" onClick={() => setVehicleModal(false)}>Cancel</button>
@@ -1863,10 +1962,15 @@ export default function App() {
                     </div>
                     <div className="form-group">
                       <label>LICENSE CATEGORY</label>
-                      <select name="license_category" className="form-control" defaultValue={selectedDriver?.license_category || 'LMV'}>
-                        <option value="LMV">LMV (Light Motor Vehicle)</option>
-                        <option value="HMV">HMV (Heavy Motor Vehicle)</option>
-                      </select>
+                      <CustomSelect 
+                        name="license_category"
+                        options={[
+                          { value: 'LMV', label: 'LMV (Light Motor Vehicle)' },
+                          { value: 'HMV', label: 'HMV (Heavy Motor Vehicle)' }
+                        ]}
+                        value={formDrvCat}
+                        onChange={setFormDrvCat}
+                      />
                     </div>
                   </div>
                   <div className="form-row">
@@ -1909,12 +2013,17 @@ export default function App() {
                     </div>
                     <div className="form-group">
                       <label>STATUS</label>
-                      <select name="status" className="form-control" defaultValue={selectedDriver?.status || 'Available'}>
-                        <option value="Available">Available</option>
-                        <option value="On Trip" disabled>On Trip</option>
-                        <option value="Off Duty">Off Duty</option>
-                        <option value="Suspended">Suspended</option>
-                      </select>
+                      <CustomSelect 
+                        name="status"
+                        options={[
+                          { value: 'Available', label: 'Available' },
+                          { value: 'On Trip', label: 'On Trip', disabled: true },
+                          { value: 'Off Duty', label: 'Off Duty' },
+                          { value: 'Suspended', label: 'Suspended' }
+                        ]}
+                        value={formDrvStatus}
+                        onChange={setFormDrvStatus}
+                      />
                     </div>
                   </div>
                   <div className="modal-footer">
@@ -1947,32 +2056,36 @@ export default function App() {
                   </div>
                   
                   <div className="form-group">
-                    <label>SELECT AVAILABLE VEHICLE</label>
-                    <select name="vehicle_reg_no" className="form-control" required>
-                      <option value="">-- Choose Vehicle --</option>
-                      {vehicles.filter(v => v.status === 'Available').map(v => (
-                        <option key={v.registration_number} value={v.registration_number}>
-                          {v.registration_number} - {v.name_model} (Cap: {v.max_load_capacity}kg)
-                        </option>
-                      ))}
-                    </select>
+                    <CustomSelect 
+                      name="vehicle_reg_no"
+                      placeholder="-- Choose Vehicle --"
+                      options={vehicles.filter(v => v.status === 'Available').map(v => ({
+                        value: v.registration_number,
+                        label: `${v.registration_number} - ${v.name_model} (Cap: ${v.max_load_capacity}kg)`
+                      }))}
+                      value={formTripVeh}
+                      onChange={setFormTripVeh}
+                      required={true}
+                    />
                   </div>
 
                   <div className="form-group">
-                    <label>SELECT AVAILABLE DRIVER</label>
-                    <select name="driver_id" className="form-control" required>
-                      <option value="">-- Choose Driver --</option>
-                      {drivers
+                    <CustomSelect 
+                      name="driver_id"
+                      placeholder="-- Choose Driver --"
+                      options={drivers
                         .filter(d => {
                           const today = new Date().toISOString().split('T')[0];
                           return d.status === 'Available' && d.license_expiry_date >= today;
                         })
-                        .map(d => (
-                          <option key={d.id} value={d.id}>
-                            {d.name} (Score: {d.safety_score}%, Class: {d.license_category})
-                          </option>
-                        ))}
-                    </select>
+                        .map(d => ({
+                          value: d.id,
+                          label: `${d.name} (Score: ${d.safety_score}%, Class: ${d.license_category})`
+                        }))}
+                      value={formTripDrv}
+                      onChange={setFormTripDrv}
+                      required={true}
+                    />
                   </div>
 
                   <div className="form-row">
@@ -2069,15 +2182,17 @@ export default function App() {
                 </div>
                 <form onSubmit={handleMaintSubmit}>
                   <div className="form-group">
-                    <label>SELECT VEHICLE</label>
-                    <select name="vehicle_reg_no" className="form-control" required>
-                      <option value="">-- Choose Vehicle --</option>
-                      {vehicles.filter(v => v.status !== 'Retired').map(v => (
-                        <option key={v.registration_number} value={v.registration_number}>
-                          {v.registration_number} - {v.name_model} ({v.status})
-                        </option>
-                      ))}
-                    </select>
+                    <CustomSelect 
+                      name="vehicle_reg_no"
+                      placeholder="-- Choose Vehicle --"
+                      options={vehicles.filter(v => v.status !== 'Retired').map(v => ({
+                        value: v.registration_number,
+                        label: `${v.registration_number} - ${v.name_model} (${v.status})`
+                      }))}
+                      value={formMaintVeh}
+                      onChange={setFormMaintVeh}
+                      required={true}
+                    />
                   </div>
 
                   <div className="form-group">
@@ -2120,15 +2235,17 @@ export default function App() {
                 </div>
                 <form onSubmit={handleFuelSubmit}>
                   <div className="form-group">
-                    <label>VEHICLE REGISTRATION</label>
-                    <select name="vehicle_reg_no" className="form-control" required>
-                      <option value="">-- Choose Vehicle --</option>
-                      {vehicles.map(v => (
-                        <option key={v.registration_number} value={v.registration_number}>
-                          {v.registration_number} - {v.name_model}
-                        </option>
-                      ))}
-                    </select>
+                    <CustomSelect 
+                      name="vehicle_reg_no"
+                      placeholder="-- Choose Vehicle --"
+                      options={vehicles.map(v => ({
+                        value: v.registration_number,
+                        label: `${v.registration_number} - ${v.name_model}`
+                      }))}
+                      value={formExpVeh}
+                      onChange={setFormExpVeh}
+                      required={true}
+                    />
                   </div>
 
                   <div className="form-row">
@@ -2167,23 +2284,32 @@ export default function App() {
                 <form onSubmit={handleExpenseSubmit}>
                   <div className="form-group">
                     <label>VEHICLE REGISTRATION</label>
-                    <select name="vehicle_reg_no" className="form-control" required>
-                      <option value="">-- Choose Vehicle --</option>
-                      {vehicles.map(v => (
-                        <option key={v.registration_number} value={v.registration_number}>
-                          {v.registration_number} - {v.name_model}
-                        </option>
-                      ))}
-                    </select>
+                    <CustomSelect 
+                      name="vehicle_reg_no"
+                      placeholder="-- Choose Vehicle --"
+                      options={vehicles.map(v => ({
+                        value: v.registration_number,
+                        label: `${v.registration_number} - ${v.name_model}`
+                      }))}
+                      value={formExpVeh}
+                      onChange={setFormExpVeh}
+                      required={true}
+                    />
                   </div>
 
                   <div className="form-row">
                     <div className="form-group">
                       <label>EXPENSE TYPE</label>
-                      <select name="type" className="form-control" required>
-                        <option value="Toll">Toll Charges</option>
-                        <option value="Other">Other Miscellaneous</option>
-                      </select>
+                      <CustomSelect 
+                        name="type"
+                        options={[
+                          { value: 'Toll', label: 'Toll Charges' },
+                          { value: 'Other', label: 'Other Miscellaneous' }
+                        ]}
+                        value={formExpType}
+                        onChange={setFormExpType}
+                        required={true}
+                      />
                     </div>
                     <div className="form-group">
                       <label>COST (₹)</label>
@@ -2193,14 +2319,19 @@ export default function App() {
 
                   <div className="form-group">
                     <label>ASSOCIATED TRIP ID (OPTIONAL)</label>
-                    <select name="trip_id" className="form-control">
-                      <option value="">-- None --</option>
-                      {trips.map(t => (
-                        <option key={t.id} value={t.id}>
-                          TR-{String(t.id).padStart(4, '0')} ({t.source} → {t.destination})
-                        </option>
-                      ))}
-                    </select>
+                    <CustomSelect 
+                      name="trip_id"
+                      placeholder="-- None --"
+                      options={[
+                        { value: '', label: '-- None --' },
+                        ...trips.map(t => ({
+                          value: t.id,
+                          label: `TR-${String(t.id).padStart(4, '0')} (${t.source} → ${t.destination})`
+                        }))
+                      ]}
+                      value={formExpTrip}
+                      onChange={setFormExpTrip}
+                    />
                   </div>
 
                   <div className="form-group">

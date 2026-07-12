@@ -3,7 +3,8 @@ import {
   LayoutDashboard, Truck, Users, Route, Wrench, 
   Fuel, TrendingUp, Settings, LogOut, Plus, 
   Search, Filter, Calendar, DollarSign, ShieldAlert, 
-  FileSpreadsheet, Check, X, Moon, Sun, AlertTriangle, Map, Leaf, Bell, Clock, Activity, Mail, Lock
+  FileSpreadsheet, Check, X, Moon, Sun, AlertTriangle, Map, Leaf, Bell, Clock, Activity, Mail, Lock,
+  Play, Trash2
 } from 'lucide-react';
 import { 
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, 
@@ -2471,7 +2472,7 @@ export default function App() {
                     <span className="kpi-title" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Cargo Dispatches</span>
                     <Route size={14} style={{ color: 'var(--primary)' }} />
                   </div>
-                  <div style={{ fontSize: '24px', fontWeight: '800', marginTop: '10px', fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>
+                  <div style={{ fontSize: '32px', fontWeight: '800', marginTop: '10px', fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>
                     {trips.length}
                   </div>
                   <span style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '4px' }}>All Time Created</span>
@@ -2482,7 +2483,7 @@ export default function App() {
                     <span className="kpi-title" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Active En Route</span>
                     <div className="pulse-dot" style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--info)', display: 'inline-block' }}></div>
                   </div>
-                  <div style={{ fontSize: '24px', fontWeight: '800', marginTop: '10px', fontFamily: 'var(--font-display)', color: 'var(--info)' }}>
+                  <div style={{ fontSize: '32px', fontWeight: '800', marginTop: '10px', fontFamily: 'var(--font-display)', color: 'var(--info)' }}>
                     {trips.filter(t => t.status === 'Dispatched').length}
                   </div>
                   <span style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '4px' }}>Transit / Tracking Live</span>
@@ -2493,7 +2494,7 @@ export default function App() {
                     <span className="kpi-title" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Completed Deliveries</span>
                     <Check size={14} style={{ color: 'var(--success)' }} />
                   </div>
-                  <div style={{ fontSize: '24px', fontWeight: '800', marginTop: '10px', fontFamily: 'var(--font-display)', color: 'var(--success)' }}>
+                  <div style={{ fontSize: '32px', fontWeight: '800', marginTop: '10px', fontFamily: 'var(--font-display)', color: 'var(--success)' }}>
                     {trips.filter(t => t.status === 'Completed').length}
                   </div>
                   <span style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '4px' }}>Successfully Unloaded</span>
@@ -2504,7 +2505,7 @@ export default function App() {
                     <span className="kpi-title" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Draft / Scheduled</span>
                     <Calendar size={14} style={{ color: 'var(--warning)' }} />
                   </div>
-                  <div style={{ fontSize: '24px', fontWeight: '800', marginTop: '10px', fontFamily: 'var(--font-display)', color: 'var(--warning)' }}>
+                  <div style={{ fontSize: '32px', fontWeight: '800', marginTop: '10px', fontFamily: 'var(--font-display)', color: 'var(--warning)' }}>
                     {trips.filter(t => t.status === 'Draft').length}
                   </div>
                   <span style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '4px' }}>Pending Dispatch Trigger</span>
@@ -2583,7 +2584,16 @@ export default function App() {
 
                           return (
                             <tr key={trip.id}>
-                              <td style={{ fontWeight: '600' }}>TR-{String(trip.id).padStart(4, '0')}</td>
+                              <td style={{ verticalAlign: 'middle' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                  <span style={{ fontWeight: '600' }}>TR-{String(trip.id).padStart(4, '0')}</span>
+                                  {trip.status === 'Completed' && (
+                                    <span style={{ fontSize: '9px', color: 'var(--text-muted)', marginTop: '2px', whiteSpace: 'nowrap' }}>
+                                      {trip.actual_fuel_consumed}L · {trip.final_odometer ? `${Math.round(trip.final_odometer / 1000)}k` : '--'} km
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
                               <td style={{ whiteSpace: 'nowrap' }}>
                                 <Truck size={14} style={{ marginRight: '6px', color: isHeavy ? 'var(--primary)' : 'var(--info)', display: 'inline-block', verticalAlign: 'middle' }} />
                                 {trip.vehicle_reg_no}
@@ -2623,43 +2633,57 @@ export default function App() {
                               <td style={{ fontWeight: '600' }}>₹{trip.revenue.toLocaleString()}</td>
                               <td>{renderStatusPill(trip.status)}</td>
                               <td>
-                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                                   {trip.status === 'Draft' && hasWriteAccess(user.role, 'Trips') && (
                                     <>
-                                      <button className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => handleTripDispatch(trip.id)}>
-                                        Dispatch
+                                      <button 
+                                        className="btn btn-primary" 
+                                        style={{ width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }} 
+                                        onClick={() => handleTripDispatch(trip.id)}
+                                        title="Dispatch Trip"
+                                      >
+                                        <Play size={12} fill="currentColor" style={{ marginLeft: '1px' }} />
                                       </button>
-                                      <button className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => handleTripCancel(trip.id)}>
-                                        Cancel
+                                      <button 
+                                        className="btn btn-secondary" 
+                                        style={{ width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }} 
+                                        onClick={() => handleTripCancel(trip.id)}
+                                        title="Cancel Trip"
+                                      >
+                                        <X size={12} strokeWidth={2.5} />
                                       </button>
                                     </>
                                   )}
 
                                   {trip.status === 'Dispatched' && hasWriteAccess(user.role, 'Trips') && (
                                     <>
-                                      <button className="btn btn-success" style={{ padding: '6px 12px', fontSize: '12px', color: '#fff' }} onClick={() => setCompleteTripModal(trip)}>
-                                        Complete
+                                      <button 
+                                        className="btn btn-success" 
+                                        style={{ width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, color: '#fff' }} 
+                                        onClick={() => setCompleteTripModal(trip)}
+                                        title="Complete Trip"
+                                      >
+                                        <Check size={12} strokeWidth={3} />
                                       </button>
-                                      <button className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => handleTripCancel(trip.id)}>
-                                        Cancel
+                                      <button 
+                                        className="btn btn-secondary" 
+                                        style={{ width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }} 
+                                        onClick={() => handleTripCancel(trip.id)}
+                                        title="Cancel Trip"
+                                      >
+                                        <X size={12} strokeWidth={2.5} />
                                       </button>
                                     </>
-                                  )}
-                                  
-                                  {trip.status === 'Completed' && (
-                                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginRight: '4px' }}>
-                                      Consumed: {trip.actual_fuel_consumed}L, Odo: {trip.final_odometer}
-                                    </span>
                                   )}
 
                                   {(trip.status === 'Dispatched' || trip.status === 'Completed') && (
                                     <button 
                                       className="btn btn-secondary" 
-                                      style={{ padding: '6px 12px', fontSize: '12px', borderColor: 'var(--primary)', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '4px' }} 
+                                      style={{ width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, borderColor: 'var(--primary)', color: 'var(--primary)' }} 
                                       onClick={() => setTrackingTrip(trip)}
+                                      title="Track Route"
                                     >
                                       <Map size={12} />
-                                      <span>Track</span>
                                     </button>
                                   )}
                                 </div>

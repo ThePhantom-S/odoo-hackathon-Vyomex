@@ -3,7 +3,8 @@ import {
   LayoutDashboard, Truck, Users, Route, Wrench, 
   Fuel, TrendingUp, Settings, LogOut, Plus, 
   Search, Filter, Calendar, DollarSign, ShieldAlert, 
-  FileSpreadsheet, Check, X, Moon, Sun, AlertTriangle, Map, Leaf, Bell, Clock, Activity, Mail, Lock
+  FileSpreadsheet, Check, X, Moon, Sun, AlertTriangle, Map, Leaf, Bell, Clock, Activity, Mail, Lock,
+  CheckCircle, Zap, MapPin, ArrowRight, Cpu, Package, BarChart2
 } from 'lucide-react';
 import { 
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, 
@@ -636,12 +637,12 @@ export default function App() {
 
   // Activity ticker for login page recent operations
   const loginActivities = [
-    { icon: '✔', text: 'Trip #431 Completed', time: '2m ago', color: '#10b981' },
-    { icon: '⛽', text: 'Fuel logged — MH-12-TR-4820', time: '5m ago', color: '#f59e0b' },
-    { icon: '🚚', text: 'Vehicle KA-09-AB-1234 Assigned', time: '11m ago', color: '#3b82f6' },
-    { icon: '🔧', text: 'Maintenance #28 Closed', time: '18m ago', color: '#a78bfa' },
-    { icon: '📍', text: 'Trip #429 Dispatch Initiated', time: '22m ago', color: '#f59e0b' },
-    { icon: '✔', text: 'Driver Hari K. checked in', time: '30m ago', color: '#10b981' },
+    { IconComp: CheckCircle, text: 'Trip #431 completed successfully', time: '2m ago', color: '#10b981' },
+    { IconComp: Fuel, text: 'Fuel logged — MH-12-TR-4820', time: '5m ago', color: '#f59e0b' },
+    { IconComp: Truck, text: 'Vehicle KA-09-AB-1234 assigned', time: '11m ago', color: '#3b82f6' },
+    { IconComp: Wrench, text: 'Maintenance order #28 closed', time: '18m ago', color: '#a78bfa' },
+    { IconComp: MapPin, text: 'Trip #429 dispatch initiated', time: '22m ago', color: '#f59e0b' },
+    { IconComp: Users, text: 'Driver Hari K. checked in', time: '30m ago', color: '#10b981' },
   ];
 
   useEffect(() => {
@@ -1141,226 +1142,265 @@ export default function App() {
   // --- RENDERS ---
 
   if (!token || !user) {
-    const currentActivity = loginActivities[activityIndex];
+    const { IconComp: ActivityIcon, text: actText, time: actTime, color: actColor } = loginActivities[activityIndex];
     return (
       <div className="login-screen">
         <ThreeLogisticsGlobe />
-        {/* Ambient glow layers */}
         <div className="login-bg-glow-1"></div>
         <div className="login-bg-glow-2"></div>
-        {/* Extra orange glow behind logo area */}
-        <div style={{ position: 'absolute', top: 0, left: 0, width: '500px', height: '500px', background: 'radial-gradient(circle at 20% 15%, rgba(245,158,11,0.08) 0%, transparent 60%)', pointerEvents: 'none', zIndex: 1 }}></div>
-        {/* Extra blue glow behind login card */}
-        <div style={{ position: 'absolute', bottom: 0, right: 0, width: '500px', height: '500px', background: 'radial-gradient(circle at 80% 85%, rgba(59,130,246,0.07) 0%, transparent 60%)', pointerEvents: 'none', zIndex: 1 }}></div>
+        {/* Ambient glow — orange behind logo, blue behind card */}
+        <div style={{ position: 'absolute', top: 0, left: 0, width: '600px', height: '600px', background: 'radial-gradient(circle at 15% 20%, rgba(245,158,11,0.07) 0%, transparent 55%)', pointerEvents: 'none', zIndex: 1 }}></div>
+        <div style={{ position: 'absolute', bottom: 0, right: 0, width: '600px', height: '600px', background: 'radial-gradient(circle at 85% 80%, rgba(59,130,246,0.06) 0%, transparent 55%)', pointerEvents: 'none', zIndex: 1 }}></div>
 
-        {/* LEFT HERO PANEL */}
+        {/* ─── LEFT HERO PANEL ─── */}
         <div className="login-left">
-          {/* Brand */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '36px' }}>
-            <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: 'linear-gradient(135deg, #f59e0b, #e07a00)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '16px', color: '#000', boxShadow: '0 0 20px rgba(245,158,11,0.35)', flexShrink: 0 }}>TO</div>
+
+          {/* Brand lockup */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '40px' }}>
+            <div style={{
+              width: '44px', height: '44px', borderRadius: '10px',
+              background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 0 0 1px rgba(245,158,11,0.3), 0 8px 24px rgba(245,158,11,0.25)',
+              flexShrink: 0
+            }}>
+              <Cpu size={20} color="#000" strokeWidth={2.5} />
+            </div>
             <div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: '700', color: 'var(--text-primary)', letterSpacing: '-0.3px' }}>TransitOps</div>
-              <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '500', letterSpacing: '1px', textTransform: 'uppercase' }}>Fleet Management Console</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: '17px', fontWeight: '700', color: 'var(--text-primary)', letterSpacing: '-0.4px' }}>TransitOps</div>
+              <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '500', letterSpacing: '1.2px', textTransform: 'uppercase', marginTop: '1px' }}>Fleet Intelligence Platform</div>
+            </div>
+            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 10px', borderRadius: '20px', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
+              <div style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: '#10b981', animation: 'pulseDot 1.8s infinite ease-in-out' }}></div>
+              <span style={{ fontSize: '10px', color: '#10b981', fontWeight: '600', letterSpacing: '0.3px' }}>Live</span>
             </div>
           </div>
 
           {/* Hero heading */}
-          <h1 style={{ fontSize: '36px', fontWeight: '800', fontFamily: 'var(--font-display)', lineHeight: '1.15', color: 'var(--text-primary)', margin: 0 }}>
+          <h1 style={{ fontSize: '34px', fontWeight: '800', fontFamily: 'var(--font-display)', lineHeight: '1.18', color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.5px' }}>
             Fleet Intelligence<br />
-            <span style={{ color: 'var(--primary)' }}>for Modern Logistics</span>
+            <span style={{ background: 'linear-gradient(90deg, #f59e0b, #fb923c)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>for Modern Logistics</span>
           </h1>
-          <p style={{ color: 'var(--text-secondary)', marginTop: '14px', lineHeight: '1.65', fontSize: '14px', maxWidth: '440px' }}>
-            Trusted by dispatch teams managing vehicles, drivers, live routes, expenses &amp; carbon compliance — all from one command center.
+          <p style={{ color: 'var(--text-secondary)', marginTop: '14px', lineHeight: '1.65', fontSize: '13.5px', maxWidth: '440px' }}>
+            Trusted by dispatch teams managing vehicles, drivers, live routes, expenses &amp; carbon compliance — from a single command center.
           </p>
 
-          {/* Live Fleet Stats row */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px', marginTop: '28px' }}>
+          {/* Live KPI stats */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginTop: '28px' }}>
             {[
-              { val: vehicles.length || 24, label: 'Fleet Assets', icon: '🚚', color: '#f59e0b' },
-              { val: drivers.length || 12, label: 'Active Drivers', icon: '👤', color: '#3b82f6' },
-              { val: trips.filter(t => t.status === 'In Transit').length || 8, label: 'Live Trips', icon: '📍', color: '#10b981' },
-              { val: maintenanceLogs.filter(m => m.status === 'Pending').length || 6, label: 'Maintenance', icon: '🔧', color: '#a78bfa' },
-            ].map((stat, i) => (
-              <div key={i} style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', padding: '14px 12px', textAlign: 'center', backdropFilter: 'blur(8px)' }}>
-                <div style={{ fontSize: '18px', marginBottom: '6px' }}>{stat.icon}</div>
-                <div style={{ fontSize: '22px', fontWeight: '800', color: stat.color, fontFamily: 'var(--font-display)', lineHeight: 1 }}>{stat.val}</div>
-                <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '4px', fontWeight: '500' }}>{stat.label}</div>
+              { val: vehicles.length || 24, label: 'Fleet Assets', Icon: Package, color: '#f59e0b', bg: 'rgba(245,158,11,0.08)' },
+              { val: drivers.length || 12, label: 'Active Drivers', Icon: Users, color: '#3b82f6', bg: 'rgba(59,130,246,0.08)' },
+              { val: trips.filter(t => t.status === 'In Transit').length || 8, label: 'Live Trips', Icon: MapPin, color: '#10b981', bg: 'rgba(16,185,129,0.08)' },
+              { val: maintenanceLogs.filter(m => m.status === 'Pending').length || 6, label: 'Maintenance', Icon: Wrench, color: '#a78bfa', bg: 'rgba(167,139,250,0.08)' },
+            ].map(({ val, label, Icon, color, bg }, i) => (
+              <div key={i} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', padding: '14px 10px', textAlign: 'center', backdropFilter: 'blur(8px)', transition: 'border-color 0.2s' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '7px', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px' }}>
+                  <Icon size={13} color={color} strokeWidth={2} />
+                </div>
+                <div style={{ fontSize: '20px', fontWeight: '800', color, fontFamily: 'var(--font-display)', lineHeight: 1 }}>{val}</div>
+                <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '4px', fontWeight: '500', lineHeight: 1.2 }}>{label}</div>
               </div>
             ))}
           </div>
 
-          {/* Dashboard Preview Card */}
-          <div className="login-preview-card">
+          {/* Dashboard preview card */}
+          <div className="login-preview-card" style={{ marginTop: '24px' }}>
             <div className="preview-card-header">
               <span className="preview-indicator"></span>
-              <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-secondary)', letterSpacing: '0.5px', textTransform: 'uppercase' }}>Live Dashboard Preview</span>
-              <span style={{ marginLeft: 'auto', fontSize: '10px', color: 'var(--success)', fontWeight: '600' }}>● Operational</span>
+              <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', letterSpacing: '0.8px', textTransform: 'uppercase' }}>Analytics Overview</span>
+              <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <BarChart2 size={11} color="#10b981" />
+                <span style={{ fontSize: '10px', color: '#10b981', fontWeight: '600' }}>Operational</span>
+              </div>
             </div>
-            {/* Mini chart bar mockup */}
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '5px', height: '48px', marginBottom: '14px' }}>
-              {[35, 60, 45, 80, 55, 90, 70, 65, 85, 50, 75, 95].map((h, i) => (
-                <div key={i} style={{ flex: 1, height: `${h}%`, borderRadius: '3px 3px 0 0', background: i === 11 ? 'var(--primary)' : `rgba(245,158,11,${0.15 + (h / 100) * 0.4})`, transition: 'all 0.3s ease' }}></div>
+            {/* Mini bar chart */}
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', height: '44px', marginBottom: '14px' }}>
+              {[32, 58, 42, 76, 52, 88, 68, 62, 82, 48, 72, 94].map((h, i) => (
+                <div key={i} style={{
+                  flex: 1, height: `${h}%`, borderRadius: '3px 3px 0 0',
+                  background: i === 11 ? 'linear-gradient(to top, #f59e0b, #fb923c)' : `rgba(245,158,11,${0.12 + (h / 100) * 0.38})`,
+                  transition: 'all 0.3s ease'
+                }}></div>
               ))}
             </div>
             <div className="preview-grid">
               {[
-                { val: `₹${(expenses.reduce((a,e) => a + (e.amount||0), 0) / 1000 || 284).toFixed(0)}K`, label: 'Monthly Spend', color: '#f59e0b' },
-                { val: `${trips.filter(t => t.status === 'Completed').length || 43}`, label: 'Trips Done', color: '#10b981' },
-                { val: `${vehicles.filter(v => v.status === 'Available').length || 18}`, label: 'Available', color: '#3b82f6' },
-              ].map((s, i) => (
+                { val: `₹${(expenses.reduce((a,e) => a + (e.amount||0), 0) / 1000 || 284).toFixed(0)}K`, label: 'Monthly Spend', color: '#f59e0b', Icon: DollarSign },
+                { val: `${trips.filter(t => t.status === 'Completed').length || 43}`, label: 'Trips Done', color: '#10b981', Icon: CheckCircle },
+                { val: `${vehicles.filter(v => v.status === 'Available').length || 18}`, label: 'Available', color: '#3b82f6', Icon: Truck },
+              ].map(({ val, label, color, Icon }, i) => (
                 <div key={i} className="preview-stat">
-                  <div className="preview-stat-val" style={{ color: s.color }}>{s.val}</div>
-                  <div className="preview-stat-lbl">{s.label}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '4px' }}>
+                    <Icon size={10} color={color} />
+                    <div className="preview-stat-val" style={{ color, fontSize: '16px' }}>{val}</div>
+                  </div>
+                  <div className="preview-stat-lbl">{label}</div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Recent Activity Ticker */}
-          <div style={{ marginTop: '18px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '10px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '12px', overflow: 'hidden' }}>
-            <span style={{ fontSize: '16px', flexShrink: 0 }}>{currentActivity.icon}</span>
-            <div style={{ flex: 1, overflow: 'hidden' }}>
-              <div style={{ fontSize: '12px', fontWeight: '600', color: currentActivity.color, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{currentActivity.text}</div>
-              <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '1px' }}>Recent Operations • {currentActivity.time}</div>
+          {/* Activity ticker */}
+          <div style={{ marginTop: '14px', background: 'rgba(255,255,255,0.015)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '10px', padding: '11px 14px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '28px', height: '28px', borderRadius: '7px', background: `${actColor}15`, border: `1px solid ${actColor}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <ActivityIcon size={13} color={actColor} strokeWidth={2} />
             </div>
-            <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+            <div style={{ flex: 1, overflow: 'hidden' }}>
+              <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{actText}</div>
+              <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '1px' }}>Recent activity &bull; {actTime}</div>
+            </div>
+            <div style={{ display: 'flex', gap: '3px', flexShrink: 0 }}>
               {loginActivities.map((_, i) => (
-                <div key={i} style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: i === activityIndex ? 'var(--primary)' : 'rgba(255,255,255,0.12)', transition: 'all 0.3s ease' }}></div>
+                <div key={i} style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: i === activityIndex ? actColor : 'rgba(255,255,255,0.1)', transition: 'all 0.3s ease' }}></div>
               ))}
             </div>
           </div>
 
           {/* Footer */}
-          <div style={{ marginTop: 'auto', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600' }}>TransitOps </span>
-              <span style={{ fontSize: '10px', color: 'var(--text-muted)', opacity: 0.7 }}>v1.0 • Powered by Odoo ERP</span>
+          <div style={{ marginTop: 'auto', paddingTop: '22px', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Zap size={11} color="#f59e0b" />
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>TransitOps <span style={{ opacity: 0.6 }}>v1.0 &bull; Powered by Odoo ERP</span></span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981', animation: 'pulseDot 1.8s infinite ease-in-out' }}></div>
-              <span style={{ fontSize: '10px', color: '#10b981', fontWeight: '600' }}>All Services Operational</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '3px 8px', borderRadius: '20px', background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)' }}>
+              <div style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: '#10b981', animation: 'pulseDot 1.8s infinite ease-in-out' }}></div>
+              <span style={{ fontSize: '10px', color: '#10b981', fontWeight: '600' }}>All Systems Nominal</span>
             </div>
           </div>
         </div>
 
-        {/* RIGHT LOGIN PANEL */}
+        {/* ─── RIGHT LOGIN PANEL ─── */}
         <div className="login-right">
           <div className="login-card">
+
             {/* Card heading */}
-            <div style={{ marginBottom: '24px' }}>
-              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '22px', fontWeight: '800', color: 'var(--text-primary)', margin: 0 }}>
-                Welcome Back 👋
-              </h2>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '6px' }}>Fleet Management Console — sign in to continue</p>
+            <div style={{ marginBottom: '26px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'linear-gradient(135deg, #f59e0b, #d97706)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 12px rgba(245,158,11,0.3)' }}>
+                  <Cpu size={16} color="#000" strokeWidth={2.5} />
+                </div>
+                <div>
+                  <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', letterSpacing: '0.5px', textTransform: 'uppercase' }}>TransitOps</div>
+                </div>
+              </div>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '21px', fontWeight: '700', color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.3px' }}>Sign in to your account</h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '5px', lineHeight: 1.5 }}>Fleet Management Console — enter your credentials to continue</p>
             </div>
 
-            {/* Error banner */}
+            {/* Error */}
             {authError && (
-              <div className="alert-banner alert-banner-danger" style={{ marginBottom: '16px' }}>
-                <ShieldAlert size={16} />
-                <span style={{ fontSize: '13px' }}>{authError}</span>
+              <div className="alert-banner alert-banner-danger" style={{ marginBottom: '16px', fontSize: '13px' }}>
+                <ShieldAlert size={15} />
+                <span>{authError}</span>
               </div>
             )}
 
-            {/* Progress bar */}
+            {/* Progress */}
             {loginLoading && (
               <div style={{ marginBottom: '16px' }}>
                 <div className="loader-progress-container">
                   <div className="loader-progress-bar" style={{ width: `${loginProgress}%` }}></div>
                 </div>
-                <div style={{ fontSize: '11px', color: 'var(--primary)', fontWeight: '600', textAlign: 'center' }}>{loginStage}</div>
+                <div style={{ fontSize: '11px', color: 'var(--primary)', fontWeight: '600', textAlign: 'center', marginTop: '6px', letterSpacing: '0.3px' }}>{loginStage}</div>
               </div>
             )}
 
             {/* Form */}
             <form id="login-form" onSubmit={handleLogin}>
               <div className="form-group">
-                <label style={{ fontSize: '11px', fontWeight: '700', letterSpacing: '0.5px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Email Address</label>
+                <label style={{ fontSize: '11px', fontWeight: '700', letterSpacing: '0.6px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '7px', display: 'block' }}>Work Email</label>
                 <div style={{ position: 'relative' }}>
                   <Mail size={14} style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
                   <input
-                    type="email"
-                    className="form-control"
-                    value={email}
+                    type="email" className="form-control" value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="manager@transitops.com"
-                    style={{ paddingLeft: '38px', height: '44px', backgroundColor: 'rgba(15,23,42,0.5)', fontSize: '13px' }}
+                    placeholder="you@transitops.com"
+                    style={{ paddingLeft: '38px', height: '44px', backgroundColor: 'rgba(15,23,42,0.6)', fontSize: '13px', borderColor: 'rgba(255,255,255,0.08)' }}
                     required
                   />
                 </div>
               </div>
 
-              <div className="form-group" style={{ marginBottom: '8px' }}>
-                <label style={{ fontSize: '11px', fontWeight: '700', letterSpacing: '0.5px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Password</label>
+              <div className="form-group" style={{ marginBottom: '10px' }}>
+                <label style={{ fontSize: '11px', fontWeight: '700', letterSpacing: '0.6px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '7px', display: 'block' }}>Password</label>
                 <div style={{ position: 'relative' }}>
                   <Lock size={14} style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
                   <input
-                    type="password"
-                    className="form-control"
-                    value={password}
+                    type="password" className="form-control" value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    style={{ paddingLeft: '38px', height: '44px', backgroundColor: 'rgba(15,23,42,0.5)', fontSize: '13px' }}
+                    placeholder="Enter your password"
+                    style={{ paddingLeft: '38px', height: '44px', backgroundColor: 'rgba(15,23,42,0.6)', fontSize: '13px', borderColor: 'rgba(255,255,255,0.08)' }}
                     required
                   />
                 </div>
               </div>
 
-              {/* Remember me + Forgot */}
+              {/* Remember / Forgot row */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12px', color: 'var(--text-muted)', cursor: 'pointer', userSelect: 'none' }}>
                   <input type="checkbox" style={{ accentColor: 'var(--primary)', width: '13px', height: '13px' }} />
-                  Remember me
+                  Keep me signed in
                 </label>
-                <span style={{ fontSize: '12px', color: 'var(--primary)', cursor: 'pointer', fontWeight: '600' }}>Forgot password?</span>
+                <span style={{ fontSize: '12px', color: 'var(--primary)', cursor: 'pointer', fontWeight: '600' }}>Reset password</span>
               </div>
 
-              {/* CTA */}
-              <button type="submit" className="btn-primary-login" disabled={loginLoading}>
-                {loginLoading ? loginStage || 'Authenticating...' : 'Sign In →'}
+              {/* Sign in CTA */}
+              <button type="submit" className="btn-primary-login" disabled={loginLoading} style={{ fontSize: '13px', letterSpacing: '0.4px' }}>
+                {loginLoading ? (loginStage || 'Authenticating...') : (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    Continue to Dashboard
+                    <ArrowRight size={15} strokeWidth={2.5} />
+                  </span>
+                )}
               </button>
             </form>
 
             {/* Divider */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '20px 0 16px' }}>
-              <div style={{ flex: 1, height: '1px', backgroundColor: 'rgba(255,255,255,0.07)' }}></div>
-              <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '700', letterSpacing: '1px', whiteSpace: 'nowrap' }}>QUICK ACCESS</span>
-              <div style={{ flex: 1, height: '1px', backgroundColor: 'rgba(255,255,255,0.07)' }}></div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '18px 0 14px' }}>
+              <div style={{ flex: 1, height: '1px', backgroundColor: 'rgba(255,255,255,0.06)' }}></div>
+              <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '700', letterSpacing: '1.2px' }}>DEMO ACCOUNTS</span>
+              <div style={{ flex: 1, height: '1px', backgroundColor: 'rgba(255,255,255,0.06)' }}></div>
             </div>
 
-            {/* Demo Profile Cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+            {/* Demo profile cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '7px' }}>
               {[
-                { name: 'Raven K.', role: 'Fleet Manager', email: 'manager@transitops.com', initials: 'RK', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)', icon: <Truck size={10} /> },
-                { name: 'Jenish S.', role: 'Dispatcher', email: 'dispatcher@transitops.com', initials: 'JS', color: '#3b82f6', bg: 'rgba(59,130,246,0.12)', icon: <Route size={10} /> },
-                { name: 'Jackson J.', role: 'Safety Officer', email: 'safety@transitops.com', initials: 'JJ', color: '#ef4444', bg: 'rgba(239,68,68,0.12)', icon: <ShieldAlert size={10} /> },
-                { name: 'Hari K.', role: 'Analyst', email: 'analyst@transitops.com', initials: 'HK', color: '#a78bfa', bg: 'rgba(167,139,250,0.12)', icon: <TrendingUp size={10} /> },
-              ].map((profile, i) => (
+                { name: 'Raven K.', role: 'Fleet Manager', email: 'manager@transitops.com', initials: 'RK', color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', Icon: Truck },
+                { name: 'Jenish S.', role: 'Dispatcher', email: 'dispatcher@transitops.com', initials: 'JS', color: '#3b82f6', bg: 'rgba(59,130,246,0.1)', Icon: Route },
+                { name: 'Jackson J.', role: 'Safety Officer', email: 'safety@transitops.com', initials: 'JJ', color: '#ef4444', bg: 'rgba(239,68,68,0.1)', Icon: ShieldAlert },
+                { name: 'Hari K.', role: 'Analyst', email: 'analyst@transitops.com', initials: 'HK', color: '#a78bfa', bg: 'rgba(167,139,250,0.1)', Icon: BarChart2 },
+              ].map(({ name, role, email, initials, color, bg, Icon }, i) => (
                 <button
                   key={i}
-                  onClick={() => handleDemoLogin(profile.email)}
-                  style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid rgba(255,255,255,0.07)`, borderRadius: '10px', padding: '10px 12px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', gap: '10px' }}
-                  onMouseEnter={e => { e.currentTarget.style.background = profile.bg; e.currentTarget.style.borderColor = profile.color + '55'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; }}
+                  onClick={() => handleDemoLogin(email)}
+                  style={{ background: 'rgba(255,255,255,0.015)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '9px', padding: '10px 11px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.18s ease', display: 'flex', alignItems: 'center', gap: '9px' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = bg; e.currentTarget.style.borderColor = color + '40'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.015)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; e.currentTarget.style.transform = 'none'; }}
                 >
-                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: profile.bg, border: `1.5px solid ${profile.color}55`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '800', color: profile.color, flexShrink: 0 }}>
-                    {profile.initials}
+                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: bg, border: `1.5px solid ${color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '11px', color, flexShrink: 0, letterSpacing: '0.3px' }}>
+                    {initials}
                   </div>
-                  <div style={{ overflow: 'hidden' }}>
-                    <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{profile.name}</div>
-                    <div style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '1px' }}>{profile.icon} {profile.role}</div>
+                  <div style={{ overflow: 'hidden', flex: 1 }}>
+                    <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</div>
+                    <div style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                      <Icon size={9} color={color} />
+                      <span>{role}</span>
+                    </div>
                   </div>
                 </button>
               ))}
             </div>
 
-            {/* Bottom status */}
-            <div style={{ marginTop: '18px', paddingTop: '14px', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            {/* Bottom status bar */}
+            <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981', animation: 'pulseDot 1.8s infinite ease-in-out' }}></div>
-                <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>All Systems Online</span>
+                <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981', animation: 'pulseDot 1.8s infinite ease-in-out', flexShrink: 0 }}></div>
+                <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>All systems operational</span>
               </div>
-              <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Server: <span style={{ color: '#10b981', fontWeight: '700' }}>28ms</span></span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <Cpu size={9} color="var(--text-muted)" />
+                <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Latency <span style={{ color: '#10b981', fontWeight: '700' }}>28ms</span></span>
+              </div>
             </div>
           </div>
         </div>

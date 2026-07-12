@@ -901,26 +901,62 @@ export default function App() {
       <div className="login-screen">
         <div className="login-left">
           <div className="logo-container" style={{ border: 'none', paddingLeft: 0 }}>
-            <div className="logo-icon">TO</div>
+            <div className="logo-icon" style={{ background: 'linear-gradient(135deg, var(--primary), #e07a00)' }}>TO</div>
             <div>
               <div className="logo-text">TransitOps</div>
               <div className="logo-subtitle">Fleet Management</div>
             </div>
           </div>
-          <h1 style={{ fontSize: '36px', fontWeight: '800', fontFamily: 'var(--font-display)', marginTop: '40px', lineHeight: '1.2' }}>
+          <h1 style={{ fontSize: '32px', fontWeight: '800', fontFamily: 'var(--font-display)', marginTop: '30px', lineHeight: '1.2', color: 'var(--text-primary)' }}>
             Smart Transport Operations Platform
           </h1>
-          <p style={{ color: 'var(--text-secondary)', marginTop: '16px', lineHeight: '1.6', fontSize: '15px' }}>
+          <p style={{ color: 'var(--text-secondary)', marginTop: '12px', lineHeight: '1.6', fontSize: '14px', marginBottom: '10px' }}>
             Digitize your vehicles, drivers, dispatches, maintenance, and expenses from a single high-fidelity workspace. Enforce logic validations and view dynamic ROI calculations instantly.
           </p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '20px' }}>
+            <div className="login-feature-item">
+              <div style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)', padding: '8px', borderRadius: '6px', color: 'var(--primary)' }}>
+                <Truck size={16} />
+              </div>
+              <div>
+                <h4 style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-primary)' }}>Asset Intelligence</h4>
+                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>Odometer telemetry, fleet health logs, and automated service reminders.</p>
+              </div>
+            </div>
+
+            <div className="login-feature-item">
+              <div style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', padding: '8px', borderRadius: '6px', color: 'var(--info)' }}>
+                <Route size={16} />
+              </div>
+              <div>
+                <h4 style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-primary)' }}>Dispatch & Real-Time Coordinates</h4>
+                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>Multi-stage trip workflows, interactive maps, and cargo-weight threshold enforcement.</p>
+              </div>
+            </div>
+
+            <div className="login-feature-item">
+              <div style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', padding: '8px', borderRadius: '6px', color: 'var(--success)' }}>
+                <DollarSign size={16} />
+              </div>
+              <div>
+                <h4 style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-primary)' }}>Expense & Carbon Analytics</h4>
+                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>Fuel cost computation, maintenance ROI audits, and CO2 footprint dashboards.</p>
+              </div>
+            </div>
+          </div>
+
           <div style={{ marginTop: 'auto', borderTop: '1px solid var(--border-color)', paddingTop: '24px' }}>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>OD00 HACKATHON 2026</span>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600' }}>OD00 HACKATHON 2026</span>
           </div>
         </div>
-
+ 
         <div className="login-right">
+          <div className="login-bg-glow-1"></div>
+          <div className="login-bg-glow-2"></div>
+          
           <div className="login-card">
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: '700', marginBottom: '8px' }}>Sign in</h2>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: '700', marginBottom: '8px', color: 'var(--text-primary)' }}>Sign in</h2>
             <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '24px' }}>Enter your credentials to manage fleet assets</p>
             
             {authError && (
@@ -929,7 +965,7 @@ export default function App() {
                 <span>{authError}</span>
               </div>
             )}
-
+ 
             <form id="login-form" onSubmit={handleLogin}>
               <div className="form-group">
                 <label>EMAIL ADDRESS</label>
@@ -957,32 +993,44 @@ export default function App() {
                 {loginLoading ? 'Authenticating...' : 'Sign In'}
               </button>
             </form>
-
+ 
             <div style={{ marginTop: '32px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
                 <div style={{ flexGrow: 1, height: '1px', backgroundColor: 'var(--border-color)' }}></div>
-                <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', letterSpacing: '0.5px' }}>EVALUATOR QUICK SIGN-IN</span>
+                <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '700', letterSpacing: '0.5px' }}>EVALUATOR QUICK SIGN-IN</span>
                 <div style={{ flexGrow: 1, height: '1px', backgroundColor: 'var(--border-color)' }}></div>
               </div>
               
               <div className="demo-account-grid">
                 <button className="demo-account-btn" onClick={() => handleDemoLogin('manager@transitops.com')}>
-                  <div className="demo-account-role">Fleet Manager</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                    <span className="demo-account-role">Manager</span>
+                    <LayoutDashboard size={12} style={{ color: 'var(--primary)' }} />
+                  </div>
                   <div className="demo-account-name">Raven K.</div>
                   <div className="demo-account-email">manager@transitops.com</div>
                 </button>
                 <button className="demo-account-btn" onClick={() => handleDemoLogin('dispatcher@transitops.com')}>
-                  <div className="demo-account-role">Dispatcher</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                    <span className="demo-account-role">Dispatcher</span>
+                    <Route size={12} style={{ color: 'var(--info)' }} />
+                  </div>
                   <div className="demo-account-name">Jenish S.</div>
                   <div className="demo-account-email">dispatcher@transitops.com</div>
                 </button>
                 <button className="demo-account-btn" onClick={() => handleDemoLogin('safety@transitops.com')}>
-                  <div className="demo-account-role">Safety Officer</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                    <span className="demo-account-role">Safety</span>
+                    <ShieldAlert size={12} style={{ color: 'var(--danger)' }} />
+                  </div>
                   <div className="demo-account-name">Jackson J.</div>
                   <div className="demo-account-email">safety@transitops.com</div>
                 </button>
                 <button className="demo-account-btn" onClick={() => handleDemoLogin('analyst@transitops.com')}>
-                  <div className="demo-account-role">Financial Analyst</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                    <span className="demo-account-role">Analyst</span>
+                    <DollarSign size={12} style={{ color: 'var(--success)' }} />
+                  </div>
                   <div className="demo-account-name">Hari K.</div>
                   <div className="demo-account-email">analyst@transitops.com</div>
                 </button>
@@ -1281,8 +1329,8 @@ export default function App() {
                     {/* Hero Card: Active Trips */}
                     <div className="kpi-card" style={{ 
                       background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95))', 
-                      border: '1px solid rgba(79, 70, 229, 0.3)',
-                      boxShadow: '0 0 20px rgba(79, 70, 229, 0.1)',
+                      border: '1px solid rgba(245, 158, 11, 0.3)',
+                      boxShadow: '0 0 20px rgba(245, 158, 11, 0.1)',
                       position: 'relative',
                       overflow: 'hidden'
                     }}>
@@ -1405,7 +1453,7 @@ export default function App() {
                                   {sparkData.map((entry, index) => (
                                     <Cell 
                                       key={`cell-${index}`} 
-                                      fill={index === sparkData.length - 1 ? 'var(--primary)' : 'rgba(79, 70, 229, 0.3)'} 
+                                      fill={index === sparkData.length - 1 ? 'var(--primary)' : 'rgba(245, 158, 11, 0.3)'} 
                                     />
                                   ))}
                                 </Bar>
@@ -1467,7 +1515,7 @@ export default function App() {
               ) : (
                 /* Fallback basic stats */
                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '20px', marginBottom: '32px' }}>
-                  <div className="kpi-card" style={{ background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95))', border: '1px solid rgba(79, 70, 229, 0.3)' }}>
+                  <div className="kpi-card" style={{ background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95))', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
                     <div className="kpi-header">
                       <span className="kpi-title" style={{ color: 'var(--primary)' }}>Active Cargo Dispatches</span>
                     </div>
@@ -3303,7 +3351,7 @@ export default function App() {
                       {/* Route Line Path */}
                       <path 
                         d={`M ${src.x} ${src.y} L ${dest.x} ${dest.y}`} 
-                        stroke="rgba(79, 70, 229, 0.2)" 
+                        stroke="rgba(245, 158, 11, 0.2)" 
                         strokeWidth="3" 
                         fill="none" 
                       />

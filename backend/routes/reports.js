@@ -86,6 +86,9 @@ router.get('/analytics', authenticateToken, authorizeRoles('Fleet Manager', 'Fin
         ? parseFloat((((v.total_revenue - fuelAndMaint) / v.acquisition_cost) * 100).toFixed(2)) 
         : 0;
 
+      // Carbon Emissions = Fuel Consumed * 2.68 (kg CO2 / liter)
+      const carbonEmissions = parseFloat((v.total_fuel_liters * 2.68).toFixed(2));
+
       return {
         registration_number: v.registration_number,
         name_model: v.name_model,
@@ -99,7 +102,8 @@ router.get('/analytics', authenticateToken, authorizeRoles('Fleet Manager', 'Fin
         maintenance_cost: v.maintenance_cost,
         operational_cost: totalOpCost,
         fuel_efficiency: fuelEfficiency,
-        roi: roiPercent
+        roi: roiPercent,
+        carbon_emissions: carbonEmissions
       };
     });
 
@@ -142,6 +146,8 @@ router.get('/analytics', authenticateToken, authorizeRoles('Fleet Manager', 'Fin
 
     const monthlyChartData = Object.values(monthlyMerged).sort((a, b) => a.month.localeCompare(b.month));
 
+    const totalCarbonEmissions = parseFloat(formattedVehicleData.reduce((sum, v) => sum + v.carbon_emissions, 0).toFixed(2));
+
     res.json({
       kpis: {
         activeVehicles: statsMap['On Trip'],
@@ -150,7 +156,8 @@ router.get('/analytics', authenticateToken, authorizeRoles('Fleet Manager', 'Fin
         activeTrips: tripMap['Dispatched'],
         pendingTrips: tripMap['Draft'],
         driversOnDuty,
-        fleetUtilization
+        fleetUtilization,
+        totalCarbonEmissions
       },
       vehicles: formattedVehicleData,
       monthlyChartData

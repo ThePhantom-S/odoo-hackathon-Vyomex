@@ -694,12 +694,11 @@ export default function App() {
     <div className="app-container">
       {/* Global notifications banner */}
       {globalMessage && (
-        <div style={{
-          position: 'fixed', top: '20px', right: '20px', zIndex: '9999',
-          animation: 'modalFadeIn 0.3s ease'
-        }} className={`alert-banner alert-banner-${globalMessage.type === 'success' ? 'success' : globalMessage.type === 'warning' ? 'warning' : 'danger'}`}>
-          <Check size={18} />
-          <span>{globalMessage.text}</span>
+        <div className={`toast-notification toast-${globalMessage.type || 'success'}`}>
+          {globalMessage.type === 'success' && <Check size={18} className="toast-icon-success" />}
+          {globalMessage.type === 'warning' && <AlertTriangle size={18} className="toast-icon-warning" />}
+          {globalMessage.type === 'danger' && <X size={18} className="toast-icon-danger" />}
+          <span className="toast-text">{globalMessage.text}</span>
         </div>
       )}
 

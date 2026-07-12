@@ -1317,8 +1317,9 @@ export default function App() {
                       const healthPct = vehicles.length > 0 ? Math.round((healthyVehicles / vehicles.length) * 100) : 100;
                       const healthDesc = healthPct >= 90 ? 'Excellent Condition' : healthPct >= 75 ? 'Good Condition' : 'Maintenance Required';
                       const strokeDash = `${healthPct} ${100 - healthPct}`;
+                      const glowClass = healthPct >= 90 ? 'glow-success' : healthPct >= 75 ? 'glow-warning' : 'glow-danger';
                       return (
-                        <div className="kpi-card" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px' }}>
+                        <div className={`kpi-card ${glowClass}`} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px' }}>
                           <div>
                             <span className="kpi-title">Fleet Health</span>
                             <div style={{ fontSize: '24px', fontWeight: '800', marginTop: '8px', fontFamily: 'var(--font-display)', color: healthPct >= 90 ? 'var(--success)' : healthPct >= 75 ? 'var(--warning)' : 'var(--danger)' }}>
@@ -1336,16 +1337,54 @@ export default function App() {
                     })()}
 
                     {/* KPI 5: Fleet Utilization */}
-                    <div className="kpi-card" style={{ padding: '16px 20px' }}>
-                      <div className="kpi-header">
-                        <span className="kpi-title">Fleet Utilization</span>
-                        <div className="kpi-icon" style={{ backgroundColor: 'var(--primary-light)', color: 'var(--primary)' }}>
-                          <TrendingUp size={16} />
+                    <div className="kpi-card glow-primary" style={{ 
+                      padding: '16px 20px', 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      justifyContent: 'space-between',
+                      minHeight: '110px'
+                    }}>
+                      <div>
+                        <div className="kpi-header">
+                          <span className="kpi-title">Fleet Utilization</span>
+                          <div className="kpi-icon" style={{ backgroundColor: 'var(--primary-light)', color: 'var(--primary)' }}>
+                            <TrendingUp size={16} />
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '8px' }}>
+                          <span style={{ fontSize: '24px', fontWeight: '700', fontFamily: 'var(--font-display)' }}>
+                            {analytics.kpis.fleetUtilization}%
+                          </span>
+                          <span style={{ fontSize: '11px', color: 'var(--success)', fontWeight: '600' }}>▲ +4% Today</span>
                         </div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '8px' }}>
-                        <span style={{ fontSize: '24px', fontWeight: '700', fontFamily: 'var(--font-display)' }}>{analytics.kpis.fleetUtilization}%</span>
-                        <span style={{ fontSize: '11px', color: 'var(--success)', fontWeight: '600' }}>▲ +4%</span>
+                      {/* Micro Bar Chart Sparkline */}
+                      <div style={{ height: '24px', marginTop: '8px' }}>
+                        {(() => {
+                          const sparkData = [
+                            { name: 'Mon', value: 40 },
+                            { name: 'Tue', value: 55 },
+                            { name: 'Wed', value: 70 },
+                            { name: 'Thu', value: 65 },
+                            { name: 'Fri', value: 80 },
+                            { name: 'Sat', value: 50 },
+                            { name: 'Sun', value: analytics.kpis.fleetUtilization || 60 }
+                          ];
+                          return (
+                            <ResponsiveContainer width="100%" height="100%">
+                              <BarChart data={sparkData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                                <Bar dataKey="value" fill="var(--primary)" radius={[2, 2, 0, 0]}>
+                                  {sparkData.map((entry, index) => (
+                                    <Cell 
+                                      key={`cell-${index}`} 
+                                      fill={index === sparkData.length - 1 ? 'var(--primary)' : 'rgba(245, 158, 11, 0.3)'} 
+                                    />
+                                  ))}
+                                </Bar>
+                              </BarChart>
+                            </ResponsiveContainer>
+                          );
+                        })()}
                       </div>
                     </div>
 
@@ -1355,36 +1394,44 @@ export default function App() {
                       const maintTotal = expenses.filter(e => e.type === 'Maintenance').reduce((sum, e) => sum + e.cost, 0);
                       const totalExpenses = fuelTotal + maintTotal;
                       return (
-                        <div className="kpi-card" style={{ padding: '16px 20px' }}>
-                          <div className="kpi-header">
-                            <span className="kpi-title">Operational Cost</span>
-                            <div className="kpi-icon" style={{ backgroundColor: 'var(--danger-bg)', color: 'var(--danger)' }}>
-                              <DollarSign size={16} />
+                        <div className="kpi-card glow-warning" style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                          <div>
+                            <div className="kpi-header">
+                              <span className="kpi-title">Operational Cost</span>
+                              <div className="kpi-icon" style={{ backgroundColor: 'var(--danger-bg)', color: 'var(--danger)' }}>
+                                <DollarSign size={16} />
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '8px' }}>
+                              <span style={{ fontSize: '24px', fontWeight: '700', fontFamily: 'var(--font-display)' }}>₹{totalExpenses.toLocaleString()}</span>
+                              <span style={{ fontSize: '11px', color: 'var(--danger)', fontWeight: '600' }}>↑ 8%</span>
                             </div>
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '8px' }}>
-                            <span style={{ fontSize: '24px', fontWeight: '700', fontFamily: 'var(--font-display)' }}>₹{totalExpenses.toLocaleString()}</span>
-                            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Fuel + Maint</span>
-                          </div>
+                          <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginTop: '4px' }}>
+                            Compared to yesterday
+                          </span>
                         </div>
                       );
                     })()}
 
                     {/* KPI 7: Fleet CO2 Emissions */}
-                    <div className="kpi-card" style={{ border: '1px solid rgba(16, 185, 129, 0.2)', background: 'rgba(16, 185, 129, 0.02)', padding: '16px 20px' }}>
-                      <div className="kpi-header">
-                        <span className="kpi-title" style={{ color: 'var(--success)' }}>Fleet CO2 Footprint</span>
-                        <div className="kpi-icon" style={{ backgroundColor: 'var(--success-bg)', color: 'var(--success)' }}>
-                          <Leaf size={16} />
+                    <div className="kpi-card glow-success" style={{ border: '1px solid rgba(16, 185, 129, 0.2)', background: 'rgba(16, 185, 129, 0.02)', padding: '16px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <div>
+                        <div className="kpi-header">
+                          <span className="kpi-title" style={{ color: 'var(--success)' }}>Fleet CO2 Footprint</span>
+                          <div className="kpi-icon" style={{ backgroundColor: 'var(--success-bg)', color: 'var(--success)' }}>
+                            <Leaf size={16} />
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '8px' }}>
+                          <span style={{ fontSize: '24px', fontWeight: '700', fontFamily: 'var(--font-display)', color: 'var(--success)' }}>
+                            {analytics.kpis.totalCarbonEmissions ? `${analytics.kpis.totalCarbonEmissions.toLocaleString()} kg` : '0 kg'}
+                          </span>
+                          <span style={{ fontSize: '11px', color: 'var(--success)', fontWeight: '600' }}>↓ 3%</span>
                         </div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '8px' }}>
-                        <span style={{ fontSize: '24px', fontWeight: '700', fontFamily: 'var(--font-display)' }}>
-                          {analytics.kpis.totalCarbonEmissions ? `${analytics.kpis.totalCarbonEmissions.toLocaleString()} kg` : '0 kg'}
-                        </span>
-                      </div>
                       <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
-                        <Leaf size={10} style={{ color: 'var(--success)' }} /> Offset: {Math.ceil((analytics.kpis.totalCarbonEmissions || 0) / 22)} trees needed
+                        Offset: {Math.ceil((analytics.kpis.totalCarbonEmissions || 0) / 22)} trees needed
                       </span>
                     </div>
                   </div>
@@ -1431,6 +1478,7 @@ export default function App() {
                           <th>VEHICLE</th>
                           <th>DRIVER</th>
                           <th>ROUTE</th>
+                          <th>ETA</th>
                           <th>STATUS</th>
                         </tr>
                       </thead>
@@ -1465,12 +1513,22 @@ export default function App() {
                                   </div>
                                 </td>
                                 <td style={{ fontSize: '11px' }} title={`${trip.source} → ${trip.destination}`}>{getShortAddressName(trip.source)} → {getShortAddressName(trip.destination)}</td>
+                                <td>
+                                  {(() => {
+                                    if (trip.status === 'Completed') return <span style={{ color: 'var(--text-muted)' }}>--</span>;
+                                    if (trip.status === 'Dispatched') {
+                                      const hrs = Math.max(1, Math.round(trip.planned_distance / 65));
+                                      return <span style={{ fontWeight: '600', color: 'var(--info)' }}>{hrs}h</span>;
+                                    }
+                                    return <span style={{ color: 'var(--text-secondary)' }}>Planned</span>;
+                                  })()}
+                                </td>
                                 <td>{renderStatusPill(trip.status)}</td>
                               </tr>
                             );
                           })
                         ) : (
-                          <tr><td colSpan="5" style={{ textAlign: 'center' }}>No active dispatches logged.</td></tr>
+                          <tr><td colSpan="6" style={{ textAlign: 'center' }}>No active dispatches logged.</td></tr>
                         )}
                       </tbody>
                     </table>

@@ -98,7 +98,7 @@ router.get('/analytics', authenticateToken, authorizeRoles('Fleet Manager', 'Fin
         fuel_cost: v.fuel_cost,
         maintenance_cost: v.maintenance_cost,
         operational_cost: totalOpCost,
-        fuel_efficiency,
+        fuel_efficiency: fuelEfficiency,
         roi: roiPercent
       };
     });

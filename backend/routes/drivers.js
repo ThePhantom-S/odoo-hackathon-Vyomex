@@ -173,4 +173,22 @@ router.delete('/:id', authenticateToken, authorizeRoles('Fleet Manager', 'Safety
   }
 });
 
+// Simulated Email Reminder (Fleet Manager and Safety Officer)
+router.post('/:id/send-reminder', authenticateToken, authorizeRoles('Fleet Manager', 'Safety Officer'), async (req, res) => {
+  const driverId = req.params.id;
+
+  try {
+    const driver = await get('SELECT * FROM drivers WHERE id = ?', [driverId]);
+    if (!driver) {
+      return res.status(404).json({ error: 'Driver not found' });
+    }
+
+    console.log(`[SIMULATED EMAIL] Sending license renewal reminder to ${driver.name} (Contact: ${driver.contact_number})`);
+    res.json({ message: `Renewal reminder email simulated for ${driver.name} successfully.` });
+  } catch (err) {
+    console.error('Error simulating email reminder:', err);
+    res.status(500).json({ error: 'Failed to dispatch simulated email' });
+  }
+});
+
 export default router;

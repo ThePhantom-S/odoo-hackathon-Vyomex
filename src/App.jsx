@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Truck, Users, Route, Wrench, 
   Fuel, TrendingUp, Settings, LogOut, Plus, 
   Search, Filter, Calendar, DollarSign, ShieldAlert, 
-  FileSpreadsheet, Check, X, Moon, Sun, AlertTriangle, Map
+  FileSpreadsheet, Check, X, Moon, Sun, AlertTriangle, Map, Leaf
 } from 'lucide-react';
 import { 
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, 
@@ -932,6 +932,20 @@ export default function App() {
                     </div>
                     <span className="kpi-value">{analytics.kpis.fleetUtilization}%</span>
                   </div>
+                  <div className="kpi-card" style={{ border: '1px solid rgba(16, 185, 129, 0.2)', background: 'rgba(16, 185, 129, 0.02)' }}>
+                    <div className="kpi-header">
+                      <span className="kpi-title" style={{ color: 'var(--success)' }}>Fleet CO2 Emissions</span>
+                      <div className="kpi-icon" style={{ backgroundColor: 'var(--success-bg)', color: 'var(--success)' }}>
+                        <Leaf size={16} />
+                      </div>
+                    </div>
+                    <span className="kpi-value">
+                      {analytics.kpis.totalCarbonEmissions ? `${analytics.kpis.totalCarbonEmissions.toLocaleString()} kg` : '0 kg'}
+                    </span>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginTop: '4px' }}>
+                      Offset: {Math.ceil((analytics.kpis.totalCarbonEmissions || 0) / 22)} trees/yr needed
+                    </span>
+                  </div>
                 </div>
               ) : (
                 /* Fallback basic stats */
@@ -1795,6 +1809,26 @@ export default function App() {
                         </ResponsiveContainer>
                       </div>
                     </div>
+
+                    {/* Carbon Footprint comparison chart */}
+                    <div className="card" style={{ height: 'auto', marginBottom: 0 }}>
+                      <h3 className="card-title" style={{ marginBottom: '20px', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Leaf size={18} />
+                        <span>Carbon Footprint Comparison (kg CO2)</span>
+                      </h3>
+                      <div style={{ width: '100%', height: '300px' }}>
+                        <ResponsiveContainer>
+                          <BarChart data={analytics.vehicles.filter(v => v.carbon_emissions > 0)}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
+                            <XAxis dataKey="registration_number" stroke="var(--text-secondary)" />
+                            <YAxis stroke="var(--text-secondary)" />
+                            <Tooltip contentStyle={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }} />
+                            <Legend />
+                            <Bar dataKey="carbon_emissions" fill="#10b981" name="Emissions (kg CO2)" />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Vehicle Reports Summary Grid */}
@@ -1811,22 +1845,47 @@ export default function App() {
                             <th>ACQUISITION COST</th>
                             <th>REVENUE GENERATED</th>
                             <th>VEHICLE ROI</th>
+                            <th>CO2 EMISSIONS</th>
+                            <th>ESG RATING</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {analytics.vehicles.map(v => (
-                            <tr key={v.registration_number}>
-                              <td style={{ fontWeight: '600' }}>{v.registration_number}</td>
-                              <td>{v.name_model}</td>
-                              <td>{v.fuel_efficiency > 0 ? `${v.fuel_efficiency} km/l` : 'N/A'}</td>
-                              <td>₹{v.operational_cost.toLocaleString()}</td>
-                              <td>₹{v.acquisition_cost.toLocaleString()}</td>
-                              <td>₹{v.total_revenue.toLocaleString()}</td>
-                              <td style={{ fontWeight: '700', color: v.roi >= 0 ? 'var(--success)' : 'var(--danger)' }}>
-                                {v.roi}%
-                              </td>
-                            </tr>
-                          ))}
+                          {analytics.vehicles.map(v => {
+                            const emissionsPerKm = v.total_distance > 0 ? (v.carbon_emissions / v.total_distance) : 0;
+                            let esgRating = 'C (High)';
+                            let esgClass = 'badge-danger';
+                            if (v.total_distance > 0) {
+                              if (emissionsPerKm < 0.25) {
+                                esgRating = 'A (Eco)';
+                                esgClass = 'badge-success';
+                              } else if (emissionsPerKm < 0.45) {
+                                esgRating = 'B (Average)';
+                                esgClass = 'badge-warning';
+                              }
+                            } else if (v.total_fuel_liters === 0) {
+                              esgRating = 'Pending';
+                              esgClass = 'badge-muted';
+                            }
+                            return (
+                              <tr key={v.registration_number}>
+                                <td style={{ fontWeight: '600' }}>{v.registration_number}</td>
+                                <td>{v.name_model}</td>
+                                <td>{v.fuel_efficiency > 0 ? `${v.fuel_efficiency} km/l` : 'N/A'}</td>
+                                <td>₹{v.operational_cost.toLocaleString()}</td>
+                                <td>₹{v.acquisition_cost.toLocaleString()}</td>
+                                <td>₹{v.total_revenue.toLocaleString()}</td>
+                                <td style={{ fontWeight: '700', color: v.roi >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+                                  {v.roi}%
+                                </td>
+                                <td>{v.carbon_emissions.toLocaleString()} kg</td>
+                                <td>
+                                  <span className={`badge ${esgClass}`} style={{ fontSize: '10px', padding: '3px 8px' }}>
+                                    {esgRating}
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>

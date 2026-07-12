@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Truck, Users, Route, Wrench, 
   Fuel, TrendingUp, Settings, LogOut, Plus, 
   Search, Filter, Calendar, DollarSign, ShieldAlert, 
-  FileSpreadsheet, Check, X, Moon, Sun, AlertTriangle, Map, Leaf, Bell, Clock, Activity
+  FileSpreadsheet, Check, X, Moon, Sun, AlertTriangle, Map, Leaf, Bell, Clock, Activity, Mail, Lock
 } from 'lucide-react';
 import { 
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, 
@@ -1176,28 +1176,36 @@ export default function App() {
  
             <form id="login-form" onSubmit={handleLogin}>
               <div className="form-group">
-                <label>EMAIL ADDRESS</label>
-                <input 
-                  type="email" 
-                  className="form-control" 
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="manager@transitops.com"
-                  required 
-                />
+                <label style={{ fontSize: '11px', fontWeight: '700', letterSpacing: '0.5px', color: 'var(--text-secondary)' }}>EMAIL ADDRESS</label>
+                <div style={{ position: 'relative' }}>
+                  <Mail size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                  <input 
+                    type="email" 
+                    className="form-control" 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="manager@transitops.com"
+                    style={{ paddingLeft: '36px', height: '42px', backgroundColor: 'rgba(15, 23, 42, 0.45)' }}
+                    required 
+                  />
+                </div>
               </div>
               <div className="form-group" style={{ marginBottom: '24px' }}>
-                <label>PASSWORD</label>
-                <input 
-                  type="password" 
-                  className="form-control" 
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required 
-                />
+                <label style={{ fontSize: '11px', fontWeight: '700', letterSpacing: '0.5px', color: 'var(--text-secondary)' }}>PASSWORD</label>
+                <div style={{ position: 'relative' }}>
+                  <Lock size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                  <input 
+                    type="password" 
+                    className="form-control" 
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    style={{ paddingLeft: '36px', height: '42px', backgroundColor: 'rgba(15, 23, 42, 0.45)' }}
+                    required 
+                  />
+                </div>
               </div>
-              <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '12px' }} disabled={loginLoading}>
+              <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '12px', height: '44px', fontWeight: '700', fontSize: '14px', letterSpacing: '0.5px', textTransform: 'uppercase' }} disabled={loginLoading}>
                 {loginLoading ? 'Authenticating...' : 'Sign In'}
               </button>
             </form>

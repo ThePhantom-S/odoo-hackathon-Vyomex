@@ -2048,133 +2048,183 @@ export default function App() {
           )}
 
           {activeTab === 'Fleet' && (
-            <div className="card">
-              <div className="card-header">
-                <h3 className="card-title">Vehicle Registry</h3>
-                {hasWriteAccess(user.role, 'Fleet') && (
-                  <button className="btn btn-primary" onClick={() => { setSelectedVehicle(null); setFormVehType('Van'); setFormVehStatus('Available'); setVehicleModal(true); }}>
-                    <Plus size={16} />
-                    <span>Register Vehicle</span>
-                  </button>
-                )}
-              </div>
-
-              {/* Filters bar */}
-              <div className="filter-bar">
-                <div className="search-input-wrapper">
-                  <Search size={16} className="search-icon-pos" />
-                  <input 
-                    type="text" 
-                    className="form-control" 
-                    placeholder="Search model or registration number..." 
-                    value={vehicleSearch} 
-                    onChange={e => setVehicleSearch(e.target.value)}
-                  />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {/* Fleet Mini Stats HUD */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px' }}>
+                <div className="kpi-card glow-info" style={{ padding: '16px 20px', background: 'rgba(255,255,255,0.01)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div className="kpi-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span className="kpi-title" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Fleet Assets</span>
+                    <Truck size={14} style={{ color: 'var(--info)' }} />
+                  </div>
+                  <div style={{ fontSize: '24px', fontWeight: '800', marginTop: '10px', fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>
+                    {vehicles.length}
+                  </div>
+                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '4px' }}>Registered in Database</span>
                 </div>
-                
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <CustomSelect
-                    style={{ width: '130px' }}
-                    options={[
-                      { value: 'All', label: 'All Types' },
-                      { value: 'Van', label: 'Van' },
-                      { value: 'Truck', label: 'Truck' },
-                      { value: 'Mini', label: 'Mini-Truck' },
-                      { value: 'Sedan', label: 'Sedan' }
-                    ]}
-                    value={vehicleTypeFilter}
-                    onChange={setVehicleTypeFilter}
-                  />
 
-                  <CustomSelect
-                    style={{ width: '130px' }}
-                    options={[
-                      { value: 'All', label: 'All Statuses' },
-                      { value: 'Available', label: 'Available' },
-                      { value: 'On Trip', label: 'On Trip' },
-                      { value: 'In Shop', label: 'In Shop' },
-                      { value: 'Retired', label: 'Retired' }
-                    ]}
-                    value={vehicleStatusFilter}
-                    onChange={setVehicleStatusFilter}
-                  />
+                <div className="kpi-card glow-success" style={{ padding: '16px 20px', background: 'rgba(255,255,255,0.01)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div className="kpi-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span className="kpi-title" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Available Assets</span>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--success)', display: 'inline-block' }}></span>
+                  </div>
+                  <div style={{ fontSize: '24px', fontWeight: '800', marginTop: '10px', fontFamily: 'var(--font-display)', color: 'var(--success)' }}>
+                    {vehicles.filter(v => v.status === 'Available').length}
+                  </div>
+                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '4px' }}>Ready for Dispatch</span>
+                </div>
+
+                <div className="kpi-card glow-primary" style={{ padding: '16px 20px', background: 'rgba(255,255,255,0.01)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div className="kpi-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span className="kpi-title" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Active Transit</span>
+                    <div className="pulse-dot" style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--info)', display: 'inline-block' }}></div>
+                  </div>
+                  <div style={{ fontSize: '24px', fontWeight: '800', marginTop: '10px', fontFamily: 'var(--font-display)', color: 'var(--info)' }}>
+                    {vehicles.filter(v => v.status === 'On Trip').length}
+                  </div>
+                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '4px' }}>En Route (GPS Online)</span>
+                </div>
+
+                <div className="kpi-card glow-danger" style={{ padding: '16px 20px', background: 'rgba(255,255,255,0.01)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div className="kpi-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span className="kpi-title" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>In Service Shop</span>
+                    <Wrench size={14} style={{ color: 'var(--danger)' }} />
+                  </div>
+                  <div style={{ fontSize: '24px', fontWeight: '800', marginTop: '10px', fontFamily: 'var(--font-display)', color: 'var(--danger)' }}>
+                    {vehicles.filter(v => v.status === 'In Shop').length}
+                  </div>
+                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '4px' }}>Pending Maintenance</span>
                 </div>
               </div>
 
-              {/* Table */}
-              <div className="table-responsive">
-                <table className="custom-table">
-                  <thead>
-                    <tr>
-                      <th>REGISTRATION NO.</th>
-                      <th>MODEL / CLASS</th>
-                      <th>TYPE</th>
-                      <th>LOAD CAPACITY</th>
-                      <th>ODOMETER (KM)</th>
-                      <th>ACQUISITION COST</th>
-                      <th>STATUS</th>
-                      {hasWriteAccess(user.role, 'Fleet') && <th>ACTIONS</th>}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {vehicles
-                      .filter(v => {
-                        const matchesSearch = v.registration_number.toLowerCase().includes(vehicleSearch.toLowerCase()) || v.name_model.toLowerCase().includes(vehicleSearch.toLowerCase());
-                        const matchesType = vehicleTypeFilter === 'All' || v.type === vehicleTypeFilter;
-                        const matchesStatus = vehicleStatusFilter === 'All' || v.status === vehicleStatusFilter;
-                        return matchesSearch && matchesType && matchesStatus;
-                      })
-                      .map(v => (
-                        <tr key={v.registration_number}>
-                          <td style={{ fontWeight: '600', whiteSpace: 'nowrap' }}>
-                            <Truck size={14} style={{ marginRight: '6px', color: 'var(--primary)', display: 'inline-block', verticalAlign: 'middle' }} />
-                            <span>{v.registration_number}</span>
-                          </td>
-                          <td>{v.name_model}</td>
-                          <td>
-                            <span className="badge badge-muted" style={{ textTransform: 'uppercase', fontSize: '9px', padding: '2px 6px' }}>
-                              {v.type}
-                            </span>
-                          </td>
-                          <td>{v.max_load_capacity.toLocaleString()} kg</td>
-                          <td>
-                             <div>{v.odometer.toLocaleString()} km</div>
-                             {v.odometer >= 10000 && v.status === 'Available' && (
-                               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
-                                 <span className="badge badge-warning" style={{ fontSize: '9px', padding: '2px 6px', textTransform: 'none' }}>Service Due</span>
-                                 {hasWriteAccess(user.role, 'Maintenance') && (
-                                   <button 
-                                     type="button"
-                                     style={{ background: 'none', border: 'none', color: 'var(--primary)', textDecoration: 'underline', fontSize: '10px', padding: 0, cursor: 'pointer', fontWeight: '500' }}
-                                     onClick={() => {
-                                       setFormMaintVeh(v.registration_number);
-                                       setMaintModal(true);
-                                     }}
-                                   >
-                                     Schedule
-                                   </button>
-                                 )}
-                               </div>
-                             )}
-                           </td>
-                          <td>₹{v.acquisition_cost.toLocaleString()}</td>
-                          <td>{renderVehicleStatusPill(v.status)}</td>
-                          {hasWriteAccess(user.role, 'Fleet') && (
-                            <td>
-                              <div style={{ display: 'flex', gap: '8px' }}>
-                                <button className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => { setSelectedVehicle(v); setFormVehType(v.type); setFormVehStatus(v.status); setVehicleModal(true); }}>
-                                  Edit
-                                </button>
-                                <button className="btn btn-danger" style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => handleVehicleDelete(v.registration_number)}>
-                                  Delete
-                                </button>
-                              </div>
+              {/* Main Vehicle Registry Card */}
+              <div className="card" style={{ marginBottom: 0 }}>
+                <div className="card-header">
+                  <h3 className="card-title">Vehicle Registry</h3>
+                  {hasWriteAccess(user.role, 'Fleet') && (
+                    <button className="btn btn-primary" onClick={() => { setSelectedVehicle(null); setFormVehType('Van'); setFormVehStatus('Available'); setVehicleModal(true); }}>
+                      <Plus size={16} />
+                      <span>Register Vehicle</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Filters bar */}
+                <div className="filter-bar">
+                  <div className="search-input-wrapper">
+                    <Search size={16} className="search-icon-pos" />
+                    <input 
+                      type="text" 
+                      className="form-control" 
+                      placeholder="Search model or registration number..." 
+                      value={vehicleSearch} 
+                      onChange={e => setVehicleSearch(e.target.value)}
+                    />
+                  </div>
+                  
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <CustomSelect
+                      style={{ width: '130px' }}
+                      options={[
+                        { value: 'All', label: 'All Types' },
+                        { value: 'Van', label: 'Van' },
+                        { value: 'Truck', label: 'Truck' },
+                        { value: 'Mini', label: 'Mini-Truck' },
+                        { value: 'Sedan', label: 'Sedan' }
+                      ]}
+                      value={vehicleTypeFilter}
+                      onChange={setVehicleTypeFilter}
+                    />
+
+                    <CustomSelect
+                      style={{ width: '130px' }}
+                      options={[
+                        { value: 'All', label: 'All Statuses' },
+                        { value: 'Available', label: 'Available' },
+                        { value: 'On Trip', label: 'On Trip' },
+                        { value: 'In Shop', label: 'In Shop' },
+                        { value: 'Retired', label: 'Retired' }
+                      ]}
+                      value={vehicleStatusFilter}
+                      onChange={setVehicleStatusFilter}
+                    />
+                  </div>
+                </div>
+
+                {/* Table */}
+                <div className="table-responsive">
+                  <table className="custom-table">
+                    <thead>
+                      <tr>
+                        <th>REGISTRATION NO.</th>
+                        <th>MODEL / CLASS</th>
+                        <th>TYPE</th>
+                        <th>LOAD CAPACITY</th>
+                        <th>ODOMETER (KM)</th>
+                        <th>ACQUISITION COST</th>
+                        <th>STATUS</th>
+                        {hasWriteAccess(user.role, 'Fleet') && <th>ACTIONS</th>}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {vehicles
+                        .filter(v => {
+                          const matchesSearch = v.registration_number.toLowerCase().includes(vehicleSearch.toLowerCase()) || v.name_model.toLowerCase().includes(vehicleSearch.toLowerCase());
+                          const matchesType = vehicleTypeFilter === 'All' || v.type === vehicleTypeFilter;
+                          const matchesStatus = vehicleStatusFilter === 'All' || v.status === vehicleStatusFilter;
+                          return matchesSearch && matchesType && matchesStatus;
+                        })
+                        .map(v => (
+                          <tr key={v.registration_number}>
+                            <td style={{ fontWeight: '600', whiteSpace: 'nowrap' }}>
+                              <Truck size={14} style={{ marginRight: '6px', color: 'var(--primary)', display: 'inline-block', verticalAlign: 'middle' }} />
+                              <span>{v.registration_number}</span>
                             </td>
-                          )}
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
+                            <td>{v.name_model}</td>
+                            <td>
+                              <span className="badge badge-muted" style={{ textTransform: 'uppercase', fontSize: '9px', padding: '2px 6px' }}>
+                                {v.type}
+                              </span>
+                            </td>
+                            <td>{v.max_load_capacity.toLocaleString()} kg</td>
+                            <td>
+                               <div>{v.odometer.toLocaleString()} km</div>
+                               {v.odometer >= 10000 && v.status === 'Available' && (
+                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
+                                   <span className="badge badge-warning" style={{ fontSize: '9px', padding: '2px 6px', textTransform: 'none' }}>Service Due</span>
+                                   {hasWriteAccess(user.role, 'Maintenance') && (
+                                     <button 
+                                       type="button"
+                                       style={{ background: 'none', border: 'none', color: 'var(--primary)', textDecoration: 'underline', fontSize: '10px', padding: 0, cursor: 'pointer', fontWeight: '500' }}
+                                       onClick={() => {
+                                         setFormMaintVeh(v.registration_number);
+                                         setMaintModal(true);
+                                       }}
+                                     >
+                                       Schedule
+                                     </button>
+                                   )}
+                                 </div>
+                               )}
+                             </td>
+                            <td>₹{v.acquisition_cost.toLocaleString()}</td>
+                            <td>{renderVehicleStatusPill(v.status)}</td>
+                            {hasWriteAccess(user.role, 'Fleet') && (
+                              <td>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                  <button className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => { setSelectedVehicle(v); setFormVehType(v.type); setFormVehStatus(v.status); setVehicleModal(true); }}>
+                                    Edit
+                                  </button>
+                                  <button className="btn btn-danger" style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => handleVehicleDelete(v.registration_number)}>
+                                    Delete
+                                  </button>
+                                </div>
+                              </td>
+                            )}
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}

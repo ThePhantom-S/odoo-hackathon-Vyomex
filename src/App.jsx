@@ -55,6 +55,9 @@ export default function App() {
   const [expenseModal, setExpenseModal] = useState(false);
   const [fuelModal, setFuelModal] = useState(false);
 
+  // Custom confirmation dialog state
+  const [confirmModal, setConfirmModal] = useState({ open: false, title: '', message: '', onConfirm: null });
+
   // Filter & Search states
   const [vehicleSearch, setVehicleSearch] = useState('');
   const [vehicleTypeFilter, setVehicleTypeFilter] = useState('All');
@@ -283,31 +286,37 @@ export default function App() {
         setVehicleModal(false);
         refreshData();
       } else {
-        alert(data.error || 'Failed to submit vehicle data');
+        triggerMessage(data.error || 'Failed to submit vehicle data', 'danger');
       }
     } catch (err) {
-      alert('Network error occured.');
+      triggerMessage('Network error occurred.', 'danger');
     }
   };
 
   // Delete Vehicle
-  const handleVehicleDelete = async (regNo) => {
-    if (!window.confirm(`Are you sure you want to delete vehicle ${regNo}?`)) return;
-    try {
-      const res = await fetch(`${API_BASE}/vehicles/${regNo}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (res.ok) {
-        triggerMessage('Vehicle deleted successfully.');
-        refreshData();
-      } else {
-        alert(data.error || 'Failed to delete vehicle');
+  const handleVehicleDelete = (regNo) => {
+    setConfirmModal({
+      open: true,
+      title: 'Delete Vehicle Registration',
+      message: `Are you sure you want to delete vehicle ${regNo}? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`${API_BASE}/vehicles/${regNo}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const data = await res.json();
+          if (res.ok) {
+            triggerMessage('Vehicle deleted successfully.');
+            refreshData();
+          } else {
+            triggerMessage(data.error || 'Failed to delete vehicle', 'danger');
+          }
+        } catch (err) {
+          triggerMessage('Network error occurred.', 'danger');
+        }
       }
-    } catch (err) {
-      alert('Network error.');
-    }
+    });
   };
 
   // Driver Submit
@@ -336,31 +345,37 @@ export default function App() {
         setDriverModal(false);
         refreshData();
       } else {
-        alert(data.error || 'Failed to submit driver profile');
+        triggerMessage(data.error || 'Failed to submit driver profile', 'danger');
       }
     } catch (err) {
-      alert('Network error.');
+      triggerMessage('Network error occurred.', 'danger');
     }
   };
 
   // Delete Driver
-  const handleDriverDelete = async (id) => {
-    if (!window.confirm('Delete driver profile?')) return;
-    try {
-      const res = await fetch(`${API_BASE}/drivers/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (res.ok) {
-        triggerMessage('Driver deleted successfully.');
-        refreshData();
-      } else {
-        alert(data.error || 'Failed to delete driver');
+  const handleDriverDelete = (id) => {
+    setConfirmModal({
+      open: true,
+      title: 'Delete Driver Profile',
+      message: 'Are you sure you want to delete this driver profile? This action cannot be undone.',
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`${API_BASE}/drivers/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const data = await res.json();
+          if (res.ok) {
+            triggerMessage('Driver deleted successfully.');
+            refreshData();
+          } else {
+            triggerMessage(data.error || 'Failed to delete driver', 'danger');
+          }
+        } catch (err) {
+          triggerMessage('Network error occurred.', 'danger');
+        }
       }
-    } catch (err) {
-      alert('Network error.');
-    }
+    });
   };
 
   // Trip Creation
@@ -384,10 +399,10 @@ export default function App() {
         setTripModal(false);
         refreshData();
       } else {
-        alert(data.error || 'Failed to plan trip');
+        triggerMessage(data.error || 'Failed to plan trip', 'danger');
       }
     } catch (err) {
-      alert('Network error.');
+      triggerMessage('Network error occurred.', 'danger');
     }
   };
 
@@ -403,10 +418,10 @@ export default function App() {
         triggerMessage('Trip successfully dispatched!');
         refreshData();
       } else {
-        alert(data.error || 'Failed to dispatch trip');
+        triggerMessage(data.error || 'Failed to dispatch trip', 'danger');
       }
     } catch (err) {
-      alert('Network error.');
+      triggerMessage('Network error occurred.', 'danger');
     }
   };
 
@@ -431,31 +446,37 @@ export default function App() {
         setCompleteTripModal(null);
         refreshData();
       } else {
-        alert(data.error || 'Failed to complete trip');
+        triggerMessage(data.error || 'Failed to complete trip', 'danger');
       }
     } catch (err) {
-      alert('Network error.');
+      triggerMessage('Network error occurred.', 'danger');
     }
   };
 
   // Cancel Trip
-  const handleTripCancel = async (tripId) => {
-    if (!window.confirm('Are you sure you want to cancel this trip?')) return;
-    try {
-      const res = await fetch(`${API_BASE}/trips/${tripId}/cancel`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (res.ok) {
-        triggerMessage('Trip cancelled.');
-        refreshData();
-      } else {
-        alert(data.error || 'Failed to cancel trip');
+  const handleTripCancel = (tripId) => {
+    setConfirmModal({
+      open: true,
+      title: 'Cancel Cargo Dispatch',
+      message: 'Are you sure you want to cancel this trip? The vehicle and driver status will revert to Available.',
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`${API_BASE}/trips/${tripId}/cancel`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const data = await res.json();
+          if (res.ok) {
+            triggerMessage('Trip cancelled.', 'warning');
+            refreshData();
+          } else {
+            triggerMessage(data.error || 'Failed to cancel trip', 'danger');
+          }
+        } catch (err) {
+          triggerMessage('Network error occurred.', 'danger');
+        }
       }
-    } catch (err) {
-      alert('Network error.');
-    }
+    });
   };
 
   // Log Maintenance
@@ -479,10 +500,10 @@ export default function App() {
         setMaintModal(false);
         refreshData();
       } else {
-        alert(data.error || 'Failed to log maintenance record');
+        triggerMessage(data.error || 'Failed to log maintenance record', 'danger');
       }
     } catch (err) {
-      alert('Network error.');
+      triggerMessage('Network error occurred.', 'danger');
     }
   };
 
@@ -498,10 +519,10 @@ export default function App() {
         triggerMessage('Maintenance marked complete. Vehicle restored to Available.');
         refreshData();
       } else {
-        alert(data.error || 'Failed to complete maintenance');
+        triggerMessage(data.error || 'Failed to complete maintenance', 'danger');
       }
     } catch (err) {
-      alert('Network error.');
+      triggerMessage('Network error occurred.', 'danger');
     }
   };
 
@@ -526,10 +547,10 @@ export default function App() {
         setExpenseModal(false);
         refreshData();
       } else {
-        alert(data.error || 'Failed to record expense');
+        triggerMessage(data.error || 'Failed to record expense', 'danger');
       }
     } catch (err) {
-      alert('Network error.');
+      triggerMessage('Network error occurred.', 'danger');
     }
   };
 
@@ -554,10 +575,10 @@ export default function App() {
         setFuelModal(false);
         refreshData();
       } else {
-        alert(data.error || 'Failed to log fuel data');
+        triggerMessage(data.error || 'Failed to log fuel data', 'danger');
       }
     } catch (err) {
-      alert('Network error.');
+      triggerMessage('Network error occurred.', 'danger');
     }
   };
 
@@ -1723,6 +1744,8 @@ export default function App() {
                       defaultValue={selectedVehicle?.registration_number} 
                       disabled={!!selectedVehicle} 
                       placeholder="e.g. GJ01AB1234"
+                      pattern="^[A-Za-z0-9\s-]{5,15}$"
+                      title="Registration number must be alphanumeric (letters, numbers, spaces, or hyphens) between 5 to 15 characters"
                       required 
                     />
                   </div>
@@ -1819,6 +1842,8 @@ export default function App() {
                       className="form-control" 
                       defaultValue={selectedDriver?.name} 
                       placeholder="Driver Name"
+                      pattern="^[A-Za-z\s\.]{2,50}$"
+                      title="Name must contain only letters, dots and spaces, between 2 to 50 characters"
                       required 
                     />
                   </div>
@@ -1831,6 +1856,8 @@ export default function App() {
                         className="form-control" 
                         defaultValue={selectedDriver?.license_number} 
                         placeholder="e.g. DL-12345"
+                        pattern="^[A-Z0-9-]{5,20}$"
+                        title="License number must be uppercase alphanumeric and hyphens, between 5 to 20 characters"
                         required 
                       />
                     </div>
@@ -1861,6 +1888,8 @@ export default function App() {
                         className="form-control" 
                         defaultValue={selectedDriver?.contact_number} 
                         placeholder="10-digit number"
+                        pattern="^[0-9]{10}$"
+                        title="Contact number must be exactly 10 digits"
                         required 
                       />
                     </div>
@@ -2189,6 +2218,36 @@ export default function App() {
                     <button type="submit" className="btn btn-primary">Save Expense</button>
                   </div>
                 </form>
+              </div>
+            </div>
+          )}
+          {/* 8. Custom Confirmation Dialog Modal */}
+          {confirmModal.open && (
+            <div className="modal-overlay">
+              <div className="modal-content" style={{ maxWidth: '420px' }}>
+                <div className="modal-header">
+                  <h3 className="modal-title" style={{ color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <ShieldAlert size={20} />
+                    <span>{confirmModal.title}</span>
+                  </h3>
+                  <button className="modal-close" onClick={() => setConfirmModal({ ...confirmModal, open: false })}><X size={20} /></button>
+                </div>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.5', marginBottom: '24px' }}>
+                  {confirmModal.message}
+                </p>
+                <div className="modal-footer" style={{ marginTop: 0 }}>
+                  <button type="button" className="btn btn-secondary" onClick={() => setConfirmModal({ ...confirmModal, open: false })}>Cancel</button>
+                  <button 
+                    type="button" 
+                    className="btn btn-danger" 
+                    onClick={() => {
+                      if (confirmModal.onConfirm) confirmModal.onConfirm();
+                      setConfirmModal({ ...confirmModal, open: false });
+                    }}
+                  >
+                    Confirm Deletion
+                  </button>
+                </div>
               </div>
             </div>
           )}

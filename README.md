@@ -1,41 +1,27 @@
-# 🚛 TransitOps: Smart Transport & Fleet Operations Platform
+<div align="center">
 
-TransitOps is a high-fidelity, next-generation fleet logistics dashboard designed for the **Oodo Hackathon**. It integrates real-time SQLite database tracking, dynamic cargo dispatch, preventative maintenance intervals, role-based access control simulations, and **Groq AI-powered operations optimization**.
+<img src="https://img.shields.io/badge/Vyomex-TransitOps-ff7e00?style=for-the-badge&logo=truck&logoColor=white" alt="TransitOps Logo" />
 
----
+# TransitOps
+### Real-Time Smart Fleet Logistics & AI Operations Management Console
 
-## 🚀 Key Features
+[![React](https://img.shields.io/badge/Framework-React%2019-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev)
+[![Vite](https://img.shields.io/badge/Build%20Tool-Vite%208-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev)
+[![Groq](https://img.shields.io/badge/LLM-Groq%20LLaMA%203.3-f59e0b?style=flat-square&logo=meta&logoColor=white)](https://console.groq.com/)
+[![SQLite](https://img.shields.io/badge/Database-SQLite%203-003B57?style=flat-square&logo=sqlite&logoColor=white)](https://www.sqlite.org/)
+[![Three.js](https://img.shields.io/badge/Graphics-Three.js-black?style=flat-square&logo=three.js&logoColor=white)](https://threejs.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
 
-### 🤖 AI Copilot Operations Analyst
-* **Groq Llama-3.3 Integration**: Processes live SQLite telemetry database logs, vehicle ROI indicators, and emissions metrics.
-* **Structured Executive Insights**: Generates ultra-concise highlights, risk assessments, and action items, eliminating long paragraphs.
-* **Interactive Loading Pipeline**: Cycles through active computation steps in the UI (*Ingesting database schemas*, *Parsing maintenance logs*, *Querying Groq inference engine*) to create an immersive experience.
+**Next-generation transport operations dashboard with dynamic telemetry, dispatches, and AI-powered optimizations.**  
+Real-time dispatch tracking · Multi-role simulator matrix · Dynamic maintenance diagnostics · Groq LLaMA 3.3 Engine
 
-### 🗺️ Live Dispatch Route Tracking
-* **Dynamic Node Topology**: Renders map facility coordinates and labels automatically derived from facility names.
-* **Animated Telemetry**: An animated SVG vehicle indicator moves along active routes with custom telemetry dashboard panels.
-* **Header Enhancements**: Displays facility names bolded on top with address details styled underneath.
+Built for the Oodo Hackathon by Team **Vyomex**
 
-### ⚙️ Dynamic Preventative Maintenance Indicator
-* **Interval Calculations**: Targets service cycles based on multiples of the next `10,000 km` threshold, replacing static mileage limits.
-* **Est. Date Calculation**: Estimates target calendar due dates dynamically based on average travel speed and current date.
-* **Alert Classifications**: Applies multi-tier styling (Critical Red for `<1,500 km`, Warning Amber for `<3,500 km`, and Safe Green) to progress bars.
-
-### 🔐 Simulated Role-Based Access Controls (RBAC)
-* **Simulator Bar**: Interactively switch simulated evaluator roles (Fleet Manager, Dispatcher, Safety Officer, Financial Analyst) to test UI and route restrictions.
-* **Matrix Highlighting**: Displays a styled glowing backdrop and a label next to the active role in the permissions table matrix.
-
-### 🔔 System Compliance alerts popover
-* **Alert Indicators**: A breathing warning glow animation triggers on the notification bell if there are active compliance alerts.
-* **Severity Icons**: Displays custom Lucide status icons (Danger, Warning, Info) and color tints corresponding to alert severities.
-* **Telemetry Heartbeat**: Includes a status monitor bar with a pulsing telemetry dot.
+</div>
 
 ---
 
-## 🏗️ System Architecture & Workflow
-
-### 1. System Architecture Diagram
-The architecture is structured as a decoupled client-server model with Vite acting as a local HTTP reverse-proxy, delegating authenticated queries to our Node.js SQLite server:
+## 🏗️ System Architecture
 
 ```mermaid
 flowchart TB
@@ -73,87 +59,130 @@ flowchart TB
     ViteProxy -- "Proxy Relay" --> ExpressServer
     
     OtherRouters -- "SQL Queries" --> SQLiteDB
-    ReportsRouter -- "Aggregations" --> SQLiteDB
-    ReportsRouter -- "REST Payload / Inference" --> GroqInference
-```
-
-### 2. AI Executive Analysis Pipeline Workflow
-Below is the sequence flow of the AI telemetry operations analysis, showing the lifecycle from the UI request trigger to the Groq inference return:
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User as Fleet Manager / Analyst
-    participant UI as React UI (Sparkles Button)
-    participant API as Express API Server
-    participant DB as SQLite 3 File
-    participant AI as Groq API (Llama 3.3)
-
-    User->>UI: Click "Generate AI Insights"
-    activate UI
-    UI->>UI: Ingest Status Step Cycle (1500ms intervals)
-    UI->>API: POST /api/reports/ai-analysis (Auth: Bearer JWT)
-    activate API
-    API->>DB: Query Fleet KPIs, Utilizations, Emissions & Vehicle ROI
-    activate DB
-    DB-->>API: Return Raw Row & Telemetry Datasets
-    deactivate DB
-    API->>API: Structure Context Metrics Payload
-    API->>AI: POST /v1/chat/completions (Model: llama-3.3-70b-versatile)
-    activate AI
-    AI-->>API: Return Markdown Analysis Suggestion
-    deactivate AI
-    API-->>UI: Respond with JSON { analysis: markdown }
-    deactivate API
-    UI->>UI: Parse Markdown Headers & Highlights
-    UI-->>User: Render Custom AI Optimization Cards
-    deactivate UI
+    ReportsRouter -- "SQL Queries" --> SQLiteDB
+    ReportsRouter -- "REST Inference Payload" --> GroqInference
 ```
 
 ---
 
-## 🛠️ Technology Stack
+## 💡 The Problem
 
-* **Frontend**: React 19, Vite, Vanilla CSS 3 (Theme variables & custom animations), Recharts (KPIs & trends), Three.js (Logistics Globe), Lucide React (Icons).
-* **Backend**: Node.js, Express, SQLite 3 (Database storage), JWT & bcryptjs (Security), Dotenv (Env loading).
+Modern logistics and supply chain networks struggle to coordinate vehicles, drivers, dispatches, and maintenance tasks efficiently. Fragmented tracking data leads to high fuel consumption, unoptimized maintenance checks, low fleet utilization, and high carbon footprints. TransitOps resolves this by aggregating telemetry data inside a unified hub powered by **Groq LLaMA 3.3 AI**, producing actionable executive optimizations in real-time.
+
+### 🎯 Industry Alignment & Hackathon Focus
+TransitOps aligns directly with **Logistics**, **Fintech**, and **Green Tech / ESG Compliance** domains:
+*   **Green Logistics (ESG)**: Automatically computes carbon emissions footprint values for every vehicle based on actual fuel consumption.
+*   **Preventative Logistics**: Prevents breakdown delays by calculating dynamic maintenance target dates.
+*   **Security & Simulation**: Provides a simulated Role-Based Access Control matrix to test security layers across Fleet Managers, Dispatchers, and Financial Analysts.
 
 ---
 
-## ⚙️ Installation & Setup
+## ✨ Features
 
-### 1. Prerequisites
-Ensure you have Node.js (version 18 or newer) installed.
+| Module | What it does |
+|--------|-------------|
+| 🤖 **AI Copilot Fleet Analyst** | Ingests fleet SQL telemetry metrics, dispatch histories, and fuel records to query Groq's LLaMA 3.3-70B model, returning structured executive logistics optimizations. |
+| 🗺️ **Interactive Dispatch Tracking** | Renders dynamic facility node coordinates and features an animated vehicle indicator that moves along active routes in real-time. |
+| ⚙️ **Dynamic Maintenance Calculator** | Evaluates mileage left to the next `10,000 km` interval threshold, estimating calendar due dates and outputting color status alerts. |
+| 🔐 **RBAC Simulator Matrix** | Allows evaluators to switch roles (Fleet Manager, Dispatcher, Safety Officer, Financial Analyst) dynamically with table glow accents highlighting active roles. |
+| 📊 **High-Fidelity Operations Panel** | Visualizes expense breakdowns, top costliest vehicles, and monthly costs vs. revenues using Recharts React SVG panels. |
+| 🌍 **Interactive Three.js Globe** | Features an interactive 3D logistics globe on the login panel rendering coordinates, glow meshes, and network transits. |
 
-### 2. Environment Configuration
-Create a `.env` file in the root directory and add the following keys:
-```env
-GROQ_API_KEY=your_groq_api_key_here
-PORT=5000
-JWT_SECRET=transitops_super_secret_key_123
+---
+
+## 🗄️ Database & Telemetry Schema
+
+TransitOps tracks metrics using a unified relational SQLite schema, consolidated into the following JSON format for the AI Inference engine:
+
+```json
+{
+  "kpis": {
+    "activeVehicles": 2,
+    "availableVehicles": 8,
+    "maintenanceVehicles": 3,
+    "activeTrips": 2,
+    "pendingTrips": 1,
+    "driversOnDuty": 4,
+    "fleetUtilization": 20,
+    "totalCarbonEmissions": 3280.5
+  },
+  "vehicles": [
+    {
+      "registration_number": "GJ01AB452",
+      "name_model": "VAN-05 (Tata Ace)",
+      "type": "Van",
+      "status": "Available",
+      "acquisition_cost": 320000,
+      "total_revenue": 145000,
+      "total_distance": 4500,
+      "total_fuel_liters": 450,
+      "fuel_cost": 42000,
+      "maintenance_cost": 8500,
+      "operational_cost": 50500,
+      "fuel_efficiency": 10.0,
+      "roi": 27.03,
+      "carbon_emissions": 1206.0
+    }
+  ]
+}
 ```
 
-### 3. Install Dependencies
-Run the following command at the root to install concurrent packages:
+---
+
+## 🚀 Running Locally
+
+### 1. Clone the repository
+```bash
+git clone https://github.com/ThePhantom-S/odoo-hackathon-Vyomex.git
+cd odoo-hackathon-Vyomex
+```
+
+### 2. Install dependencies
+Install concurrently at the root:
 ```bash
 npm install
 ```
-Then navigate to the backend directory and install backend packages:
+Then install the backend modules:
 ```bash
 cd backend
 npm install
 cd ..
 ```
 
-### 4. Running the Application
-Launch both the Express API and the Vite React server concurrently:
+### 3. Set up environment variables
+Create a `.env` file in the root directory:
+```env
+GROQ_API_KEY=your_groq_api_key_here
+PORT=5000
+JWT_SECRET=transitops_super_secret_key_123
+```
+
+### 4. Run the development server
+Start the Express API and Vite React server concurrently:
 ```bash
 npm run dev
 ```
-* **Frontend Local Server**: http://localhost:5173/
-* **Backend API Server**: http://localhost:5000/
+* **Frontend console**: `http://localhost:5173`
+* **Backend API server**: `http://localhost:5000`
 
-### 5. Production Build
-Verify that the React client bundle compiles cleanly for deployment:
+### 5. Production build
+Verify production readiness and compile the static bundle:
 ```bash
 npm run build
 ```
+
+---
+
+## 👥 Team Vyomex
+
+Built with ❤️ for the Oodo Hackathon by:
+*   **Hari Krishnan R**
+*   **Immanuel Thomas J**
+*   **Jackson JP**
+*   **Jenish S**
+
+---
+
+## 📄 License
+
+Distributed under the MIT License.

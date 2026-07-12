@@ -493,6 +493,9 @@ export default function App() {
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
+  const [loginProgress, setLoginProgress] = useState(0);
+  const [loginStage, setLoginStage] = useState('');
+  const [activityIndex, setActivityIndex] = useState(0);
 
   // App settings & UI states
   const [darkMode, setDarkMode] = useState(true);
@@ -631,28 +634,62 @@ export default function App() {
     }
   };
 
+  // Activity ticker for login page recent operations
+  const loginActivities = [
+    { icon: '✔', text: 'Trip #431 Completed', time: '2m ago', color: '#10b981' },
+    { icon: '⛽', text: 'Fuel logged — MH-12-TR-4820', time: '5m ago', color: '#f59e0b' },
+    { icon: '🚚', text: 'Vehicle KA-09-AB-1234 Assigned', time: '11m ago', color: '#3b82f6' },
+    { icon: '🔧', text: 'Maintenance #28 Closed', time: '18m ago', color: '#a78bfa' },
+    { icon: '📍', text: 'Trip #429 Dispatch Initiated', time: '22m ago', color: '#f59e0b' },
+    { icon: '✔', text: 'Driver Hari K. checked in', time: '30m ago', color: '#10b981' },
+  ];
+
+  useEffect(() => {
+    if (!token || !user) {
+      const interval = setInterval(() => {
+        setActivityIndex(i => (i + 1) % loginActivities.length);
+      }, 2800);
+      return () => clearInterval(interval);
+    }
+  }, [token, user]);
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setAuthError('');
     setLoginLoading(true);
+    setLoginProgress(15);
+    setLoginStage('Verifying credentials...');
     try {
+      setTimeout(() => { setLoginProgress(45); setLoginStage('Authenticating with server...'); }, 400);
       const res = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       });
+      setLoginProgress(75);
+      setLoginStage('Loading fleet data...');
       const data = await res.json();
-      if (res.ok) {
-        setToken(data.token);
-        setUser(data.user);
-        triggerMessage(`Welcome back, ${data.user.name}!`);
-      } else {
-        setAuthError(data.error || 'Invalid credentials');
-      }
+      setTimeout(() => {
+        setLoginProgress(100);
+        setLoginStage('Welcome!');
+        setTimeout(() => {
+          if (res.ok) {
+            setToken(data.token);
+            setUser(data.user);
+            triggerMessage(`Welcome back, ${data.user.name}!`);
+          } else {
+            setAuthError(data.error || 'Invalid credentials');
+            setLoginLoading(false);
+            setLoginProgress(0);
+            setLoginStage('');
+          }
+        }, 350);
+      }, 500);
     } catch (err) {
       setAuthError('Connection to server failed.');
-    } finally {
       setLoginLoading(false);
+      setLoginProgress(0);
+      setLoginStage('');
     }
   };
 
@@ -1104,153 +1141,226 @@ export default function App() {
   // --- RENDERS ---
 
   if (!token || !user) {
+    const currentActivity = loginActivities[activityIndex];
     return (
       <div className="login-screen">
         <ThreeLogisticsGlobe />
+        {/* Ambient glow layers */}
         <div className="login-bg-glow-1"></div>
         <div className="login-bg-glow-2"></div>
+        {/* Extra orange glow behind logo area */}
+        <div style={{ position: 'absolute', top: 0, left: 0, width: '500px', height: '500px', background: 'radial-gradient(circle at 20% 15%, rgba(245,158,11,0.08) 0%, transparent 60%)', pointerEvents: 'none', zIndex: 1 }}></div>
+        {/* Extra blue glow behind login card */}
+        <div style={{ position: 'absolute', bottom: 0, right: 0, width: '500px', height: '500px', background: 'radial-gradient(circle at 80% 85%, rgba(59,130,246,0.07) 0%, transparent 60%)', pointerEvents: 'none', zIndex: 1 }}></div>
+
+        {/* LEFT HERO PANEL */}
         <div className="login-left">
-          <div className="logo-container" style={{ border: 'none', paddingLeft: 0 }}>
-            <div className="logo-icon" style={{ background: 'linear-gradient(135deg, var(--primary), #e07a00)' }}>TO</div>
+          {/* Brand */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '36px' }}>
+            <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: 'linear-gradient(135deg, #f59e0b, #e07a00)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '16px', color: '#000', boxShadow: '0 0 20px rgba(245,158,11,0.35)', flexShrink: 0 }}>TO</div>
             <div>
-              <div className="logo-text">TransitOps</div>
-              <div className="logo-subtitle">Fleet Management</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: '700', color: 'var(--text-primary)', letterSpacing: '-0.3px' }}>TransitOps</div>
+              <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '500', letterSpacing: '1px', textTransform: 'uppercase' }}>Fleet Management Console</div>
             </div>
           </div>
-          <h1 style={{ fontSize: '32px', fontWeight: '800', fontFamily: 'var(--font-display)', marginTop: '30px', lineHeight: '1.2', color: 'var(--text-primary)' }}>
-            Smart Transport Operations Platform
+
+          {/* Hero heading */}
+          <h1 style={{ fontSize: '36px', fontWeight: '800', fontFamily: 'var(--font-display)', lineHeight: '1.15', color: 'var(--text-primary)', margin: 0 }}>
+            Fleet Intelligence<br />
+            <span style={{ color: 'var(--primary)' }}>for Modern Logistics</span>
           </h1>
-          <p style={{ color: 'var(--text-secondary)', marginTop: '12px', lineHeight: '1.6', fontSize: '14px', marginBottom: '10px' }}>
-            Digitize your vehicles, drivers, dispatches, maintenance, and expenses from a single high-fidelity workspace. Enforce logic validations and view dynamic ROI calculations instantly.
+          <p style={{ color: 'var(--text-secondary)', marginTop: '14px', lineHeight: '1.65', fontSize: '14px', maxWidth: '440px' }}>
+            Trusted by dispatch teams managing vehicles, drivers, live routes, expenses &amp; carbon compliance — all from one command center.
           </p>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '20px' }}>
-            <div className="login-feature-item">
-              <div style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)', padding: '8px', borderRadius: '6px', color: 'var(--primary)' }}>
-                <Truck size={16} />
+          {/* Live Fleet Stats row */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px', marginTop: '28px' }}>
+            {[
+              { val: vehicles.length || 24, label: 'Fleet Assets', icon: '🚚', color: '#f59e0b' },
+              { val: drivers.length || 12, label: 'Active Drivers', icon: '👤', color: '#3b82f6' },
+              { val: trips.filter(t => t.status === 'In Transit').length || 8, label: 'Live Trips', icon: '📍', color: '#10b981' },
+              { val: maintenanceLogs.filter(m => m.status === 'Pending').length || 6, label: 'Maintenance', icon: '🔧', color: '#a78bfa' },
+            ].map((stat, i) => (
+              <div key={i} style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', padding: '14px 12px', textAlign: 'center', backdropFilter: 'blur(8px)' }}>
+                <div style={{ fontSize: '18px', marginBottom: '6px' }}>{stat.icon}</div>
+                <div style={{ fontSize: '22px', fontWeight: '800', color: stat.color, fontFamily: 'var(--font-display)', lineHeight: 1 }}>{stat.val}</div>
+                <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '4px', fontWeight: '500' }}>{stat.label}</div>
               </div>
-              <div>
-                <h4 style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-primary)' }}>Asset Intelligence</h4>
-                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>Odometer telemetry, fleet health logs, and automated service reminders.</p>
-              </div>
-            </div>
+            ))}
+          </div>
 
-            <div className="login-feature-item">
-              <div style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', padding: '8px', borderRadius: '6px', color: 'var(--info)' }}>
-                <Route size={16} />
-              </div>
-              <div>
-                <h4 style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-primary)' }}>Dispatch & Real-Time Coordinates</h4>
-                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>Multi-stage trip workflows, interactive maps, and cargo-weight threshold enforcement.</p>
-              </div>
+          {/* Dashboard Preview Card */}
+          <div className="login-preview-card">
+            <div className="preview-card-header">
+              <span className="preview-indicator"></span>
+              <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-secondary)', letterSpacing: '0.5px', textTransform: 'uppercase' }}>Live Dashboard Preview</span>
+              <span style={{ marginLeft: 'auto', fontSize: '10px', color: 'var(--success)', fontWeight: '600' }}>● Operational</span>
             </div>
-
-            <div className="login-feature-item">
-              <div style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', padding: '8px', borderRadius: '6px', color: 'var(--success)' }}>
-                <DollarSign size={16} />
-              </div>
-              <div>
-                <h4 style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-primary)' }}>Expense & Carbon Analytics</h4>
-                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>Fuel cost computation, maintenance ROI audits, and CO2 footprint dashboards.</p>
-              </div>
+            {/* Mini chart bar mockup */}
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '5px', height: '48px', marginBottom: '14px' }}>
+              {[35, 60, 45, 80, 55, 90, 70, 65, 85, 50, 75, 95].map((h, i) => (
+                <div key={i} style={{ flex: 1, height: `${h}%`, borderRadius: '3px 3px 0 0', background: i === 11 ? 'var(--primary)' : `rgba(245,158,11,${0.15 + (h / 100) * 0.4})`, transition: 'all 0.3s ease' }}></div>
+              ))}
+            </div>
+            <div className="preview-grid">
+              {[
+                { val: `₹${(expenses.reduce((a,e) => a + (e.amount||0), 0) / 1000 || 284).toFixed(0)}K`, label: 'Monthly Spend', color: '#f59e0b' },
+                { val: `${trips.filter(t => t.status === 'Completed').length || 43}`, label: 'Trips Done', color: '#10b981' },
+                { val: `${vehicles.filter(v => v.status === 'Available').length || 18}`, label: 'Available', color: '#3b82f6' },
+              ].map((s, i) => (
+                <div key={i} className="preview-stat">
+                  <div className="preview-stat-val" style={{ color: s.color }}>{s.val}</div>
+                  <div className="preview-stat-lbl">{s.label}</div>
+                </div>
+              ))}
             </div>
           </div>
 
-          <div style={{ marginTop: 'auto', borderTop: '1px solid var(--border-color)', paddingTop: '24px' }}>
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600' }}>OD00 HACKATHON 2026</span>
+          {/* Recent Activity Ticker */}
+          <div style={{ marginTop: '18px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '10px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '12px', overflow: 'hidden' }}>
+            <span style={{ fontSize: '16px', flexShrink: 0 }}>{currentActivity.icon}</span>
+            <div style={{ flex: 1, overflow: 'hidden' }}>
+              <div style={{ fontSize: '12px', fontWeight: '600', color: currentActivity.color, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{currentActivity.text}</div>
+              <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '1px' }}>Recent Operations • {currentActivity.time}</div>
+            </div>
+            <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+              {loginActivities.map((_, i) => (
+                <div key={i} style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: i === activityIndex ? 'var(--primary)' : 'rgba(255,255,255,0.12)', transition: 'all 0.3s ease' }}></div>
+              ))}
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div style={{ marginTop: 'auto', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600' }}>TransitOps </span>
+              <span style={{ fontSize: '10px', color: 'var(--text-muted)', opacity: 0.7 }}>v1.0 • Powered by Odoo ERP</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981', animation: 'pulseDot 1.8s infinite ease-in-out' }}></div>
+              <span style={{ fontSize: '10px', color: '#10b981', fontWeight: '600' }}>All Services Operational</span>
+            </div>
           </div>
         </div>
- 
+
+        {/* RIGHT LOGIN PANEL */}
         <div className="login-right">
-          
           <div className="login-card">
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: '700', marginBottom: '8px', color: 'var(--text-primary)' }}>Sign in</h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '24px' }}>Enter your credentials to manage fleet assets</p>
-            
+            {/* Card heading */}
+            <div style={{ marginBottom: '24px' }}>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '22px', fontWeight: '800', color: 'var(--text-primary)', margin: 0 }}>
+                Welcome Back 👋
+              </h2>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '6px' }}>Fleet Management Console — sign in to continue</p>
+            </div>
+
+            {/* Error banner */}
             {authError && (
-              <div className="alert-banner alert-banner-danger">
-                <ShieldAlert size={18} />
-                <span>{authError}</span>
+              <div className="alert-banner alert-banner-danger" style={{ marginBottom: '16px' }}>
+                <ShieldAlert size={16} />
+                <span style={{ fontSize: '13px' }}>{authError}</span>
               </div>
             )}
- 
+
+            {/* Progress bar */}
+            {loginLoading && (
+              <div style={{ marginBottom: '16px' }}>
+                <div className="loader-progress-container">
+                  <div className="loader-progress-bar" style={{ width: `${loginProgress}%` }}></div>
+                </div>
+                <div style={{ fontSize: '11px', color: 'var(--primary)', fontWeight: '600', textAlign: 'center' }}>{loginStage}</div>
+              </div>
+            )}
+
+            {/* Form */}
             <form id="login-form" onSubmit={handleLogin}>
               <div className="form-group">
-                <label style={{ fontSize: '11px', fontWeight: '700', letterSpacing: '0.5px', color: 'var(--text-secondary)' }}>EMAIL ADDRESS</label>
+                <label style={{ fontSize: '11px', fontWeight: '700', letterSpacing: '0.5px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Email Address</label>
                 <div style={{ position: 'relative' }}>
-                  <Mail size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                  <input 
-                    type="email" 
-                    className="form-control" 
+                  <Mail size={14} style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
+                  <input
+                    type="email"
+                    className="form-control"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="manager@transitops.com"
-                    style={{ paddingLeft: '36px', height: '42px', backgroundColor: 'rgba(15, 23, 42, 0.45)' }}
-                    required 
+                    style={{ paddingLeft: '38px', height: '44px', backgroundColor: 'rgba(15,23,42,0.5)', fontSize: '13px' }}
+                    required
                   />
                 </div>
               </div>
-              <div className="form-group" style={{ marginBottom: '24px' }}>
-                <label style={{ fontSize: '11px', fontWeight: '700', letterSpacing: '0.5px', color: 'var(--text-secondary)' }}>PASSWORD</label>
+
+              <div className="form-group" style={{ marginBottom: '8px' }}>
+                <label style={{ fontSize: '11px', fontWeight: '700', letterSpacing: '0.5px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Password</label>
                 <div style={{ position: 'relative' }}>
-                  <Lock size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                  <input 
-                    type="password" 
-                    className="form-control" 
+                  <Lock size={14} style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
+                  <input
+                    type="password"
+                    className="form-control"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    style={{ paddingLeft: '36px', height: '42px', backgroundColor: 'rgba(15, 23, 42, 0.45)' }}
-                    required 
+                    style={{ paddingLeft: '38px', height: '44px', backgroundColor: 'rgba(15,23,42,0.5)', fontSize: '13px' }}
+                    required
                   />
                 </div>
               </div>
-              <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '12px', height: '44px', fontWeight: '700', fontSize: '14px', letterSpacing: '0.5px', textTransform: 'uppercase' }} disabled={loginLoading}>
-                {loginLoading ? 'Authenticating...' : 'Sign In'}
+
+              {/* Remember me + Forgot */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                  <input type="checkbox" style={{ accentColor: 'var(--primary)', width: '13px', height: '13px' }} />
+                  Remember me
+                </label>
+                <span style={{ fontSize: '12px', color: 'var(--primary)', cursor: 'pointer', fontWeight: '600' }}>Forgot password?</span>
+              </div>
+
+              {/* CTA */}
+              <button type="submit" className="btn-primary-login" disabled={loginLoading}>
+                {loginLoading ? loginStage || 'Authenticating...' : 'Sign In →'}
               </button>
             </form>
- 
-            <div style={{ marginTop: '32px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                <div style={{ flexGrow: 1, height: '1px', backgroundColor: 'var(--border-color)' }}></div>
-                <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '700', letterSpacing: '0.5px' }}>EVALUATOR QUICK SIGN-IN</span>
-                <div style={{ flexGrow: 1, height: '1px', backgroundColor: 'var(--border-color)' }}></div>
+
+            {/* Divider */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '20px 0 16px' }}>
+              <div style={{ flex: 1, height: '1px', backgroundColor: 'rgba(255,255,255,0.07)' }}></div>
+              <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '700', letterSpacing: '1px', whiteSpace: 'nowrap' }}>QUICK ACCESS</span>
+              <div style={{ flex: 1, height: '1px', backgroundColor: 'rgba(255,255,255,0.07)' }}></div>
+            </div>
+
+            {/* Demo Profile Cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              {[
+                { name: 'Raven K.', role: 'Fleet Manager', email: 'manager@transitops.com', initials: 'RK', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)', icon: <Truck size={10} /> },
+                { name: 'Jenish S.', role: 'Dispatcher', email: 'dispatcher@transitops.com', initials: 'JS', color: '#3b82f6', bg: 'rgba(59,130,246,0.12)', icon: <Route size={10} /> },
+                { name: 'Jackson J.', role: 'Safety Officer', email: 'safety@transitops.com', initials: 'JJ', color: '#ef4444', bg: 'rgba(239,68,68,0.12)', icon: <ShieldAlert size={10} /> },
+                { name: 'Hari K.', role: 'Analyst', email: 'analyst@transitops.com', initials: 'HK', color: '#a78bfa', bg: 'rgba(167,139,250,0.12)', icon: <TrendingUp size={10} /> },
+              ].map((profile, i) => (
+                <button
+                  key={i}
+                  onClick={() => handleDemoLogin(profile.email)}
+                  style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid rgba(255,255,255,0.07)`, borderRadius: '10px', padding: '10px 12px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', gap: '10px' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = profile.bg; e.currentTarget.style.borderColor = profile.color + '55'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; }}
+                >
+                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: profile.bg, border: `1.5px solid ${profile.color}55`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '800', color: profile.color, flexShrink: 0 }}>
+                    {profile.initials}
+                  </div>
+                  <div style={{ overflow: 'hidden' }}>
+                    <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{profile.name}</div>
+                    <div style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '1px' }}>{profile.icon} {profile.role}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            {/* Bottom status */}
+            <div style={{ marginTop: '18px', paddingTop: '14px', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981', animation: 'pulseDot 1.8s infinite ease-in-out' }}></div>
+                <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>All Systems Online</span>
               </div>
-              
-              <div className="demo-account-grid">
-                <button className="demo-account-btn" onClick={() => handleDemoLogin('manager@transitops.com')}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                    <span className="demo-account-role">Manager</span>
-                    <LayoutDashboard size={12} style={{ color: 'var(--primary)' }} />
-                  </div>
-                  <div className="demo-account-name">Raven K.</div>
-                  <div className="demo-account-email">manager@transitops.com</div>
-                </button>
-                <button className="demo-account-btn" onClick={() => handleDemoLogin('dispatcher@transitops.com')}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                    <span className="demo-account-role">Dispatcher</span>
-                    <Route size={12} style={{ color: 'var(--info)' }} />
-                  </div>
-                  <div className="demo-account-name">Jenish S.</div>
-                  <div className="demo-account-email">dispatcher@transitops.com</div>
-                </button>
-                <button className="demo-account-btn" onClick={() => handleDemoLogin('safety@transitops.com')}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                    <span className="demo-account-role">Safety</span>
-                    <ShieldAlert size={12} style={{ color: 'var(--danger)' }} />
-                  </div>
-                  <div className="demo-account-name">Jackson J.</div>
-                  <div className="demo-account-email">safety@transitops.com</div>
-                </button>
-                <button className="demo-account-btn" onClick={() => handleDemoLogin('analyst@transitops.com')}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                    <span className="demo-account-role">Analyst</span>
-                    <DollarSign size={12} style={{ color: 'var(--success)' }} />
-                  </div>
-                  <div className="demo-account-name">Hari K.</div>
-                  <div className="demo-account-email">analyst@transitops.com</div>
-                </button>
-              </div>
+              <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Server: <span style={{ color: '#10b981', fontWeight: '700' }}>28ms</span></span>
             </div>
           </div>
         </div>

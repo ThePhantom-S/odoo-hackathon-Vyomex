@@ -177,10 +177,10 @@ export const initDb = async () => {
   if (vehicleCount.count === 0) {
     console.log('Seeding initial vehicles...');
     await run('INSERT INTO vehicles (registration_number, name_model, type, max_load_capacity, odometer, acquisition_cost, status) VALUES (?, ?, ?, ?, ?, ?, ?)', [
-      'GJ01AB452', 'VAN-05 (Tata Ace)', 'Van', 500.0, 74000.0, 620000.0, 'Available'
+      'GJ01AB452', 'VAN-05 (Tata Ace)', 'Van', 500.0, 74000.0, 620000.0, 'On Trip'
     ]);
     await run('INSERT INTO vehicles (registration_number, name_model, type, max_load_capacity, odometer, acquisition_cost, status) VALUES (?, ?, ?, ?, ?, ?, ?)', [
-      'GJ01AB998', 'TRUCK-11 (Ashok Leyland)', 'Truck', 5000.0, 182000.0, 2450000.0, 'Available'
+      'GJ01AB998', 'TRUCK-11 (Ashok Leyland)', 'Truck', 5000.0, 182000.0, 2450000.0, 'On Trip'
     ]);
     await run('INSERT INTO vehicles (registration_number, name_model, type, max_load_capacity, odometer, acquisition_cost, status) VALUES (?, ?, ?, ?, ?, ?, ?)', [
       'GJ01AB120', 'MINI-03 (Mahindra Supro)', 'Mini', 1000.0, 66000.0, 410000.0, 'In Shop'
@@ -194,13 +194,13 @@ export const initDb = async () => {
   if (driverCount.count === 0) {
     console.log('Seeding initial drivers...');
     await run('INSERT INTO drivers (name, license_number, license_category, license_expiry_date, contact_number, safety_score, status) VALUES (?, ?, ?, ?, ?, ?, ?)', [
-      'Alex', 'DL-88213', 'LMV', '2028-12-31', '9876543210', 96.0, 'Available'
+      'Alex', 'DL-88213', 'LMV', '2028-12-31', '9876543210', 96.0, 'On Trip'
     ]);
     await run('INSERT INTO drivers (name, license_number, license_category, license_expiry_date, contact_number, safety_score, status) VALUES (?, ?, ?, ?, ?, ?, ?)', [
       'John', 'DL-44120', 'HMV', '2025-03-15', '9822011223', 81.0, 'Suspended'
     ]);
     await run('INSERT INTO drivers (name, license_number, license_category, license_expiry_date, contact_number, safety_score, status) VALUES (?, ?, ?, ?, ?, ?, ?)', [
-      'Priya', 'DL-77031', 'LMV', '2027-08-20', '9911033445', 99.0, 'Available'
+      'Priya', 'DL-77031', 'LMV', '2027-08-20', '9911033445', 99.0, 'On Trip'
     ]);
     await run('INSERT INTO drivers (name, license_number, license_category, license_expiry_date, contact_number, safety_score, status) VALUES (?, ?, ?, ?, ?, ?, ?)', [
       'Suresh', 'DL-90045', 'HMV', '2027-01-10', '9744099887', 88.0, 'Off Duty'
@@ -232,6 +232,16 @@ export const initDb = async () => {
     await run("INSERT INTO expenses (vehicle_reg_no, trip_id, type, cost, date, description) VALUES ('GJ01AB998', 2, 'Toll', 340.0, '2026-07-06', 'Ring Road Toll')");
     await run("INSERT INTO expenses (vehicle_reg_no, trip_id, type, cost, date, description) VALUES ('GJ01AB998', 2, 'Other', 150.0, '2026-07-06', 'Loading assistance')");
     await run("INSERT INTO expenses (vehicle_reg_no, trip_id, type, cost, date, description) VALUES ('GJ01AB998', 2, 'Fuel', 1425.0, '2026-07-06', 'Trip Fuel')");
+
+    // Seed Active Dispatched Trips (Trip 3 and Trip 4)
+    await run(`
+      INSERT INTO trips (id, source, destination, vehicle_reg_no, driver_id, cargo_weight, planned_distance, revenue, status, created_at)
+      VALUES (3, 'Gandhinagar Depot: Sector 25, GIDC Electronics Estate, Gandhinagar, Gujarat 382025', 'Vadodara Transit Hub: National Highway 8, Ranoli, Vadodara, Gujarat 391350', 'GJ01AB452', 1, 400.0, 115.0, 12000.0, 'Dispatched', '2026-07-12 11:30:00')
+    `);
+    await run(`
+      INSERT INTO trips (id, source, destination, vehicle_reg_no, driver_id, cargo_weight, planned_distance, revenue, status, created_at)
+      VALUES (4, 'Sanand Warehouse: Sarkhej-Viramgam Highway, Sanand GIDC, Ahmedabad, Gujarat 382110', 'Ahmedabad Hub: Plot 45, GIDC Industrial Estate, Vatva, Ahmedabad, Gujarat 382445', 'GJ01AB998', 3, 3500.0, 45.0, 8500.0, 'Dispatched', '2026-07-12 13:15:00')
+    `);
 
     // Active maintenance log for the In Shop vehicle
     await run("INSERT INTO maintenance_logs (vehicle_reg_no, service_type, cost, date, status, notes) VALUES ('GJ01AB120', 'Tyre Replace', 6200.0, '2026-07-10', 'Active', 'Replacing front 2 tyres')");

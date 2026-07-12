@@ -44,6 +44,20 @@ const getShortAddressName = (addressString) => {
   return parts[0].trim();
 };
 
+const splitAddress = (address) => {
+  const parts = String(address || '').split(':');
+  if (parts.length > 1) {
+    return {
+      name: parts[0].trim(),
+      details: parts.slice(1).join(':').trim()
+    };
+  }
+  return {
+    name: address,
+    details: ''
+  };
+};
+
 // Helper to render premium status badges
 const renderStatusPill = (status) => {
   let badgeClass = 'badge-muted';
@@ -3736,19 +3750,42 @@ export default function App() {
                     <button className="modal-close" onClick={() => setTrackingTrip(null)}><X size={20} /></button>
                   </div>
                   
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px', fontSize: '13px', backgroundColor: 'var(--bg-tertiary)', padding: '10px 14px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
-                    <div>
-                      <div style={{ color: 'var(--text-muted)' }}>FROM</div>
-                      <div style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{trackingTrip.source}</div>
-                    </div>
-                    <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                      <div style={{ color: 'var(--primary)', fontWeight: '700' }}>→ {trackingTrip.planned_distance} km →</div>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ color: 'var(--text-muted)' }}>TO</div>
-                      <div style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{trackingTrip.destination}</div>
-                    </div>
-                  </div>
+                  {(() => {
+                    const fromAddr = splitAddress(trackingTrip.source);
+                    const toAddr = splitAddress(trackingTrip.destination);
+                    return (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', marginBottom: '16px', fontSize: '13px', backgroundColor: 'var(--bg-tertiary)', padding: '12px 16px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ color: 'var(--text-muted)', fontSize: '10px', fontWeight: '600', letterSpacing: '0.5px' }}>FROM</div>
+                          <div style={{ fontWeight: '700', color: 'var(--text-primary)', fontSize: '14px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                            {fromAddr.name}
+                          </div>
+                          {fromAddr.details && (
+                            <div style={{ color: 'var(--text-secondary)', fontSize: '10.5px', marginTop: '2px', lineHeight: '1.4' }}>
+                              {fromAddr.details}
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', flexShrink: 0, padding: '0 8px' }}>
+                          <span style={{ color: 'var(--primary)', fontWeight: '700', fontSize: '13px' }}>{trackingTrip.planned_distance} km</span>
+                          <span style={{ color: 'var(--text-muted)', fontSize: '11px', marginTop: '2px' }}>→</span>
+                        </div>
+
+                        <div style={{ flex: 1, minWidth: 0, textAlign: 'right' }}>
+                          <div style={{ color: 'var(--text-muted)', fontSize: '10px', fontWeight: '600', letterSpacing: '0.5px' }}>TO</div>
+                          <div style={{ fontWeight: '700', color: 'var(--text-primary)', fontSize: '14px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                            {toAddr.name}
+                          </div>
+                          {toAddr.details && (
+                            <div style={{ color: 'var(--text-secondary)', fontSize: '10.5px', marginTop: '2px', lineHeight: '1.4' }}>
+                              {toAddr.details}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   {/* SVG Route Map */}
                   <div style={{ backgroundColor: '#020617', border: '1px solid var(--border-color)', borderRadius: '8px', overflow: 'hidden', position: 'relative', height: '300px' }}>

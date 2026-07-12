@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Truck, Users, Route, Wrench, 
   Fuel, TrendingUp, Settings, LogOut, Plus, 
   Search, Filter, Calendar, DollarSign, ShieldAlert, 
-  FileSpreadsheet, Check, X, Moon, Sun, AlertTriangle
+  FileSpreadsheet, Check, X, Moon, Sun, AlertTriangle, Map
 } from 'lucide-react';
 import { 
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, 
@@ -114,6 +114,9 @@ export default function App() {
 
   // Custom confirmation dialog state
   const [confirmModal, setConfirmModal] = useState({ open: false, title: '', message: '', onConfirm: null });
+
+  // Live Route Tracking State
+  const [trackingTrip, setTrackingTrip] = useState(null);
 
   // Custom Select Dropdowns states
   const [formVehType, setFormVehType] = useState('Van');
@@ -1482,7 +1485,7 @@ export default function App() {
                           </span>
                         </td>
                         <td>
-                          <div style={{ display: 'flex', gap: '8px' }}>
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                             {trip.status === 'Draft' && hasWriteAccess(user.role, 'Trips') && (
                               <>
                                 <button className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => handleTripDispatch(trip.id)}>
@@ -1506,9 +1509,20 @@ export default function App() {
                             )}
                             
                             {trip.status === 'Completed' && (
-                              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                              <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginRight: '4px' }}>
                                 Consumed: {trip.actual_fuel_consumed}L, Odo: {trip.final_odometer}
                               </span>
+                            )}
+
+                            {(trip.status === 'Dispatched' || trip.status === 'Completed') && (
+                              <button 
+                                className="btn btn-secondary" 
+                                style={{ padding: '6px 12px', fontSize: '12px', borderColor: 'var(--primary)', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '4px' }} 
+                                onClick={() => setTrackingTrip(trip)}
+                              >
+                                <Map size={12} />
+                                <span>Track</span>
+                              </button>
                             )}
                           </div>
                         </td>
@@ -2470,6 +2484,146 @@ export default function App() {
               </div>
             </div>
           )}
+
+          {/* 9. Live Route Tracking Modal */}
+          {trackingTrip && (() => {
+            const getCoordinatesForCity = (cityName) => {
+              const name = String(cityName || '').trim().toLowerCase();
+              if (name.includes('gandhinagar') || name.includes('delhi')) {
+                return { x: 80, y: 70 };
+              }
+              if (name.includes('ahmedabad') || name.includes('mumbai')) {
+                return { x: 120, y: 160 };
+              }
+              if (name.includes('vatva') || name.includes('bengaluru')) {
+                return { x: 260, y: 220 };
+              }
+              if (name.includes('sanand') || name.includes('chennai')) {
+                return { x: 320, y: 150 };
+              }
+              
+              let hash = 0;
+              for (let i = 0; i < name.length; i++) {
+                hash = name.charCodeAt(i) + ((hash << 5) - hash);
+              }
+              const x = 60 + Math.abs((hash * 17) % 280);
+              const y = 60 + Math.abs((hash * 31) % 180);
+              return { x, y };
+            };
+
+            const src = getCoordinatesForCity(trackingTrip.source);
+            const dest = getCoordinatesForCity(trackingTrip.destination);
+
+            return (
+              <div className="modal-overlay" onClick={() => setTrackingTrip(null)}>
+                <div className="modal-content" style={{ maxWidth: '600px' }} onClick={(e) => e.stopPropagation()}>
+                  <div className="modal-header">
+                    <h3 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Map size={20} style={{ color: 'var(--primary)' }} />
+                      <span>Live Dispatch Route: TR-{String(trackingTrip.id).padStart(4, '0')}</span>
+                    </h3>
+                    <button className="modal-close" onClick={() => setTrackingTrip(null)}><X size={20} /></button>
+                  </div>
+                  
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px', fontSize: '13px', backgroundColor: 'var(--bg-tertiary)', padding: '10px 14px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                    <div>
+                      <div style={{ color: 'var(--text-muted)' }}>FROM</div>
+                      <div style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{trackingTrip.source}</div>
+                    </div>
+                    <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                      <div style={{ color: 'var(--primary)', fontWeight: '700' }}>→ {trackingTrip.planned_distance} km →</div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ color: 'var(--text-muted)' }}>TO</div>
+                      <div style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{trackingTrip.destination}</div>
+                    </div>
+                  </div>
+
+                  {/* SVG Route Map */}
+                  <div style={{ backgroundColor: '#020617', border: '1px solid var(--border-color)', borderRadius: '8px', overflow: 'hidden', position: 'relative', height: '300px' }}>
+                    <svg width="100%" height="100%" viewBox="0 0 400 300" style={{ display: 'block' }}>
+                      {/* Grid background */}
+                      <defs>
+                        <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                          <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255, 255, 255, 0.03)" strokeWidth="1" />
+                        </pattern>
+                      </defs>
+                      <rect width="100%" height="100%" fill="url(#grid)" />
+
+                      {/* Map Title/Telemetry HUD */}
+                      <text x="15" y="25" fill="rgba(255,255,255,0.4)" fontSize="10" fontFamily="monospace">MAP MODE: DYNAMIC HASH TOPOLOGY</text>
+                      <text x="15" y="40" fill="var(--success)" fontSize="10" fontFamily="monospace">STATUS: ACTIVE TELEMETRY ONLINE</text>
+
+                      {/* Background Hub Nodes */}
+                      <circle cx="80" cy="220" r="3" fill="rgba(255,255,255,0.15)" />
+                      <text x="88" y="223" fill="rgba(255,255,255,0.2)" fontSize="8">Jaipur Hub</text>
+                      
+                      <circle cx="220" cy="90" r="3" fill="rgba(255,255,255,0.15)" />
+                      <text x="228" y="93" fill="rgba(255,255,255,0.2)" fontSize="8">Indore Hub</text>
+
+                      <circle cx="200" cy="170" r="3" fill="rgba(255,255,255,0.15)" />
+                      <text x="208" y="173" fill="rgba(255,255,255,0.2)" fontSize="8">Bhopal Hub</text>
+
+                      {/* Route Line Path */}
+                      <path 
+                        d={`M ${src.x} ${src.y} L ${dest.x} ${dest.y}`} 
+                        stroke="rgba(245, 158, 11, 0.2)" 
+                        strokeWidth="3" 
+                        fill="none" 
+                      />
+                      <path 
+                        id="animated-route" 
+                        d={`M ${src.x} ${src.y} L ${dest.x} ${dest.y}`} 
+                        stroke="var(--primary)" 
+                        strokeWidth="2" 
+                        strokeDasharray="6,6" 
+                        fill="none" 
+                      />
+
+                      {/* Source Node */}
+                      <circle cx={src.x} cy={src.y} r="8" fill="rgba(59, 130, 246, 0.2)" stroke="#3b82f6" strokeWidth="2" />
+                      <circle cx={src.x} cy={src.y} r="3" fill="#3b82f6" />
+                      <text x={src.x} y={src.y - 12} fill="var(--text-primary)" fontSize="10" fontWeight="600" textAnchor="middle">{trackingTrip.source}</text>
+
+                      {/* Destination Node */}
+                      <circle cx={dest.x} cy={dest.y} r="8" fill="rgba(16, 185, 129, 0.2)" stroke="#10b981" strokeWidth="2" />
+                      <circle cx={dest.x} cy={dest.y} r="3" fill="#10b981" />
+                      <text x={dest.x} y={dest.y - 12} fill="var(--text-primary)" fontSize="10" fontWeight="600" textAnchor="middle">{trackingTrip.destination}</text>
+
+                      {/* Animated Moving Vehicle Circle */}
+                      {trackingTrip.status === 'Dispatched' && (
+                        <g>
+                          <circle r="7" fill="var(--primary)" filter="drop-shadow(0 0 4px var(--primary))">
+                            <animateMotion dur="6s" repeatCount="indefinite" path={`M ${src.x} ${src.y} L ${dest.x} ${dest.y}`} />
+                          </circle>
+                          <circle r="3" fill="#000">
+                            <animateMotion dur="6s" repeatCount="indefinite" path={`M ${src.x} ${src.y} L ${dest.x} ${dest.y}`} />
+                          </circle>
+                        </g>
+                      )}
+                    </svg>
+                  </div>
+
+                  <div style={{ marginTop: '16px', display: 'flex', gap: '16px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                    <div style={{ flex: 1, backgroundColor: 'var(--bg-tertiary)', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                      <strong>Vehicle Details:</strong>
+                      <div style={{ marginTop: '4px' }}>Reg: {trackingTrip.vehicle_reg_no}</div>
+                      <div>Weight Loaded: {trackingTrip.cargo_weight} kg</div>
+                    </div>
+                    <div style={{ flex: 1, backgroundColor: 'var(--bg-tertiary)', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                      <strong>Driver Details:</strong>
+                      <div style={{ marginTop: '4px' }}>Name: {trackingTrip.driver_name}</div>
+                      <div>Status: {trackingTrip.status}</div>
+                    </div>
+                  </div>
+
+                  <div className="modal-footer" style={{ marginTop: '20px' }}>
+                    <button type="button" className="btn btn-secondary" onClick={() => setTrackingTrip(null)}>Close Tracker</button>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
 
         </div>
       </main>

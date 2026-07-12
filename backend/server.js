@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
 import { initDb, get } from './db.js';
+import { authenticateToken, authorizeRoles } from './authMiddleware.js';
 import vehicleRouter from './routes/vehicles.js';
 import driverRouter from './routes/drivers.js';
 import tripRouter from './routes/trips.js';
@@ -28,33 +29,7 @@ try {
   console.error('Database initialization failed:', err);
 }
 
-// Authentication Middleware
-export const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
 
-  if (!token) {
-    return res.status(401).json({ error: 'Access token required' });
-  }
-
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) {
-      return res.status(403).json({ error: 'Invalid or expired token' });
-    }
-    req.user = user;
-    next();
-  });
-};
-
-// Role authorization middleware
-export const authorizeRoles = (...allowedRoles) => {
-  return (req, res, next) => {
-    if (!req.user || !allowedRoles.includes(req.user.role)) {
-      return res.status(403).json({ error: 'Access denied: insufficient permissions' });
-    }
-    next();
-  };
-};
 
 // --- AUTHENTICATION ROUTES ---
 
